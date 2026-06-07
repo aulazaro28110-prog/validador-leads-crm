@@ -1,0 +1,10 @@
+# Archivos generados por el script
+validos.txt
+invalidos.txt
+
+# Configuración del entorno Claude Code
+.claude/
+
+# Caché de Python
+__pycache__/
+*.pyc
