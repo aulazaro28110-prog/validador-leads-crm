@@ -17,19 +17,31 @@ except AttributeError:
 
 
 def validar_email(email):
-    """Devuelve True si el email tiene @ y un punto DESPUÉS del @, False si no."""
-    if "@" not in email:
+    """Devuelve True si el email tiene un formato válido, False si no.
+
+    Comprueba: sin espacios, exactamente una @, usuario y dominio no vacíos,
+    un punto en el dominio que no esté pegado a la @ ni al final, y una
+    extensión (TLD) de al menos 2 caracteres.
+    """
+    email = email.strip()
+    # No se permiten espacios dentro del email
+    if " " in email:
         return False
-    # Separamos en la parte de antes y después del @
-    partes = email.split("@")
     # Debe haber exactamente una @ (dos partes) y ninguna parte vacía
+    partes = email.split("@")
     if len(partes) != 2:
         return False
     usuario, dominio = partes
     if usuario == "" or dominio == "":
         return False
-    # El punto debe estar en el dominio (después del @)
+    # El dominio debe contener un punto que no esté al principio ni al final
     if "." not in dominio:
+        return False
+    if dominio.startswith(".") or dominio.endswith("."):
+        return False
+    # La extensión (lo que va tras el último punto) debe tener al menos 2 letras
+    extension = dominio.split(".")[-1]
+    if len(extension) < 2:
         return False
     return True
 

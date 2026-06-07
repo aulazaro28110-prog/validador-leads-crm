@@ -42,11 +42,13 @@ Cualquier empresa que tenga un **departamento de ventas, marketing o RRHH** acum
 ## ⚙️ Funciones del script
 
 ### `validar_email(email)`
-Comprueba que el email tenga el formato correcto: debe contener `@` y un punto después del `@`.
+Comprueba que el email tenga un formato correcto: sin espacios, exactamente una `@`, usuario y dominio no vacíos, un punto bien colocado en el dominio y una extensión (TLD) de al menos 2 caracteres.
 ```python
 validar_email("usuario@empresa.com")  # True
 validar_email("usuarioempresa.com")   # False — falta @
 validar_email("usuario@correo")       # False — falta punto en dominio
+validar_email("usuario@empresa.c")    # False — extensión demasiado corta
+validar_email("usuario@.com")         # False — punto pegado a la @
 ```
 
 ### `validar_telefono(telefono)`
@@ -141,7 +143,6 @@ Los archivos `validos.txt` e `invalidos.txt` se generan automáticamente con el 
 
 Este script está diseñado como punto de partida. Se puede extender fácilmente para:
 
-- Validar también el campo `empresa` (que no esté vacío)
 - Exportar los resultados en CSV en lugar de TXT
 - Conectarse directamente a un CRM vía API
 - Procesar archivos con miles o decenas de miles de contactos
@@ -151,7 +152,7 @@ Este script está diseñado como punto de partida. Se puede extender fácilmente
 
 ## ⚠️ Limitaciones conocidas
 
-- La validación de email es **básica** (comprueba `@` y un punto en el dominio); no verifica que el dominio exista realmente.
+- La validación de email comprueba el **formato** (estructura `usuario@dominio.ext`), pero no verifica que el buzón o el dominio existan realmente.
 
 ---
 
