@@ -45,6 +45,13 @@ def validar_telefono(telefono):
     return False
 
 
+def validar_empresa(empresa):
+    """Devuelve True si el campo empresa no está vacío, False si lo está."""
+    if empresa.strip() == "":
+        return False
+    return True
+
+
 def detectar_duplicados(lista_contactos):
     """Recibe la lista completa y devuelve los nombres de los contactos duplicados."""
     vistos = []
@@ -114,25 +121,29 @@ def main():
             continue
         vistos.append(clave)
 
-        email_ok = validar_email(email)
-        telefono_ok = validar_telefono(telefono)
+        empresa = contacto["empresa"]
 
-        # Clasificamos con if / elif / else
-        if email_ok and telefono_ok:
+        # Recogemos todos los motivos de error que tenga el contacto
+        errores = []
+        if not validar_email(email):
+            errores.append("email incorrecto")
+        if not validar_telefono(telefono):
+            errores.append("teléfono incorrecto")
+        if not validar_empresa(empresa):
+            errores.append("empresa vacía")
+
+        # Clasificamos con if / elif / else según el número de errores
+        if len(errores) == 0:
             validos.append(contacto)
             print(f"✅ {nombre}: contacto válido")
-        elif not email_ok and not telefono_ok:
-            contacto["motivo"] = "Email y teléfono incorrectos"
+        elif len(errores) == 1:
+            contacto["motivo"] = errores[0].capitalize()
             invalidos.append(contacto)
-            print(f"❌ {nombre}: email y teléfono incorrectos")
-        elif not email_ok:
-            contacto["motivo"] = "Email incorrecto"
-            invalidos.append(contacto)
-            print(f"❌ {nombre}: email incorrecto")
+            print(f"❌ {nombre}: {errores[0]}")
         else:
-            contacto["motivo"] = "Teléfono incorrecto"
+            contacto["motivo"] = " y ".join(errores).capitalize()
             invalidos.append(contacto)
-            print(f"❌ {nombre}: teléfono incorrecto")
+            print(f"❌ {nombre}: {' y '.join(errores)}")
 
     # Detectamos duplicados sobre la lista completa
     duplicados = detectar_duplicados(contactos)

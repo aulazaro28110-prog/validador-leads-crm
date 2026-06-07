@@ -57,6 +57,13 @@ validar_telefono("6123ABC78")   # False — contiene letras
 validar_telefono("12345")       # False — demasiado corto
 ```
 
+### `validar_empresa(empresa)`
+Comprueba que el campo empresa no esté vacío.
+```python
+validar_empresa("TechCorp")  # True
+validar_empresa("")          # False — empresa vacía
+```
+
 ### `detectar_duplicados(lista_contactos)`
 Recorre la lista completa y devuelve los nombres de contactos que aparecen más de una vez con los mismos datos.
 ```python
@@ -145,7 +152,6 @@ Este script está diseñado como punto de partida. Se puede extender fácilmente
 ## ⚠️ Limitaciones conocidas
 
 - La validación de email es **básica** (comprueba `@` y un punto en el dominio); no verifica que el dominio exista realmente.
-- El campo `empresa` no se valida todavía.
 
 ---
 
