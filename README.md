@@ -77,6 +77,7 @@ validador-contactos/
 ├── contactos.csv      # Datos de entrada (tu lista de contactos)
 ├── validos.txt        # Salida generada automáticamente (no versionada)
 ├── invalidos.txt      # Salida generada automáticamente (no versionada)
+├── duplicados.txt     # Salida generada automáticamente (no versionada)
 └── README.md          # Este documento
 ```
 
@@ -143,7 +144,6 @@ Este script está diseñado como punto de partida. Se puede extender fácilmente
 
 ## ⚠️ Limitaciones conocidas
 
-- Los contactos duplicados se **detectan e informan**, pero por ahora **no se eliminan** de `validos.txt` (un duplicado válido aparece dos veces). Próxima mejora: moverlos a un `duplicados.txt` aparte.
 - La validación de email es **básica** (comprueba `@` y un punto en el dominio); no verifica que el dominio exista realmente.
 - El campo `empresa` no se valida todavía.
 

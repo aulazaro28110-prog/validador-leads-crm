@@ -75,10 +75,10 @@ def generar_informe(validos, invalidos, duplicados):
     print(f"🔁 Contactos duplicados:  {len(duplicados)}")
     if duplicados:
         print(f"   👉 Nombres duplicados: {', '.join(duplicados)}")
-    total = len(validos) + len(invalidos)
+    total = len(validos) + len(invalidos) + len(duplicados)
     print(f"📇 Total procesados:      {total}")
     print("=" * 45)
-    print("📄 Revisa 'validos.txt' e 'invalidos.txt' para el detalle.")
+    print("📄 Revisa 'validos.txt', 'invalidos.txt' y 'duplicados.txt' para el detalle.")
     print("=" * 45 + "\n")
 
 
@@ -96,12 +96,23 @@ def main():
 
     validos = []
     invalidos = []
+    duplicados_contactos = []
+    vistos = []  # claves de contactos ya procesados, para detectar repetidos
 
     # Recorremos cada contacto con un bucle for
     for contacto in contactos:
         nombre = contacto["nombre"]
         email = contacto["email"]
         telefono = contacto["telefono"]
+
+        # Clave única con todos los campos: si ya la hemos visto, es un duplicado exacto
+        clave = (nombre, email, telefono, contacto["empresa"])
+        if clave in vistos:
+            contacto["motivo"] = "Contacto duplicado"
+            duplicados_contactos.append(contacto)
+            print(f"🔁 {nombre}: contacto duplicado (omitido de válidos)")
+            continue
+        vistos.append(clave)
 
         email_ok = validar_email(email)
         telefono_ok = validar_telefono(telefono)
@@ -145,7 +156,16 @@ def main():
                 f"{c['empresa']} -> MOTIVO: {c['motivo']}\n"
             )
 
-    print("\n💾 Archivos 'validos.txt' e 'invalidos.txt' guardados.")
+    # Guardamos los contactos duplicados en duplicados.txt
+    with open("duplicados.txt", "w", encoding="utf-8") as f:
+        f.write("CONTACTOS DUPLICADOS\n")
+        f.write("=" * 40 + "\n")
+        for c in duplicados_contactos:
+            f.write(
+                f"{c['nombre']} | {c['email']} | {c['telefono']} | {c['empresa']}\n"
+            )
+
+    print("\n💾 Archivos 'validos.txt', 'invalidos.txt' y 'duplicados.txt' guardados.")
 
     # Mostramos el resumen final
     generar_informe(validos, invalidos, duplicados)
