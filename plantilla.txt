@@ -1,0 +1,13 @@
+Asunto: Una idea para {empresa}
+
+Hola {nombre_pila}:
+
+Soy [TU NOMBRE], de [TU EMPRESA]. Me pongo en contacto contigo porque ayudamos
+a empresas como {empresa} a [BENEFICIO CONCRETO QUE OFRECES].
+
+¿Tendrías 15 minutos esta semana para que te cuente cómo? Si te encaja, dime
+qué día te viene bien y lo agendamos.
+
+Un saludo,
+[TU NOMBRE]
+[TU EMPRESA] · [TU TELÉFONO]

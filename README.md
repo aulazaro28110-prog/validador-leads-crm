@@ -137,12 +137,28 @@ Estados de un lead: `nuevo` → `seguimiento` → `cerrado` / `descartado`.
 ```bash
 python validador.py                      # 1. limpia la lista nueva de leads
 python crm.py importar                   # 2. mete los nuevos en el CRM (sin duplicar)
-python crm.py hoy                        # 3. ¿a quién toca contactar hoy?
-python crm.py contactado juan@x.com      # 4. tras llamar: reagenda +3 días
+python mensajes.py                       # 3. genera el primer contacto de los nuevos
+python crm.py hoy                        # 4. ¿a quién toca contactar hoy?
+python crm.py contactado juan@x.com      # 5. tras llamar: reagenda +3 días
 python crm.py nota juan@x.com "Pide oferta"   # apunta detalles (con fecha)
 python crm.py cerrar juan@x.com          # venta hecha -> sale de la agenda
 python crm.py descartar juan@x.com       # no interesa -> sale de la agenda
 python crm.py listar                     # ver todo el CRM
+```
+
+### ✉️ Generador de primer contacto (`mensajes.py`)
+
+Crea un mensaje **personalizado por cada lead nuevo** del CRM rellenando la
+plantilla `plantilla.txt` (que editas tú, sin tocar el código) con huecos como
+`{nombre_pila}` y `{empresa}`. Genera `mensajes.csv` (`email · asunto · mensaje`),
+listo para mail-merge. Solo escribe a los leads en estado `nuevo`, así que un lead
+ya contactado no recibe dos veces el primer contacto.
+
+```
+Asunto: Una idea para {empresa}
+
+Hola {nombre_pila}:
+Soy [TU NOMBRE], de [TU EMPRESA]...
 ```
 
 Ejemplo de `python crm.py hoy`:

@@ -5,6 +5,7 @@ duplicados.txt
 leads_limpios.csv
 leads_salesforce.csv
 seguimiento.csv
+mensajes.csv
 # informe.html se versiona a propósito: sirve de muestra visual en GitHub
 
 # Configuración del entorno Claude Code
