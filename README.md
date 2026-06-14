@@ -1,166 +1,170 @@
-# 📇 Validador de Contactos Empresariales
+# 🎯 Validador y Enriquecedor de Leads Comerciales
 
-> Script Python que **limpia y valida bases de datos de contactos** en segundos — eliminando emails inválidos, teléfonos incorrectos y registros duplicados de forma automática.
+> Script Python que convierte una lista de contactos **"sucia"** en una base de datos
+> **limpia, puntuada y lista para importar a Salesforce** — en segundos y sin librerías
+> externas (solo Python estándar).
 
 ---
 
 ## 🚀 Demo rápida
 
 ```
-🚀 Iniciando validador de contactos empresariales...
+🚀 Iniciando validador y enriquecedor de leads...
 
-📥 Se han leído 10 contactos del archivo.
+📥 Se han leído 1013 contactos del archivo.
 
-✅ Ana García: contacto válido
-✅ Luis Martínez: contacto válido
-❌ María López: email incorrecto
-❌ Carlos Ruiz: email incorrecto
-❌ Elena Sánchez: teléfono incorrecto
-❌ Javier Moreno: teléfono incorrecto
+💾 Guardados: validos.txt, invalidos.txt, duplicados.txt,
+            leads_limpios.csv, leads_salesforce.csv e informe.html
 
-📊 INFORME FINAL
-✅ Válidos: 6  |  ❌ Inválidos: 4  |  🔁 Duplicados: 1
+🏢 Top empresas por nº de leads:
+   - DataSoft: 35
+   - RedBricks: 34
+   - DataMine: 33
+
+==================================================
+📊 INFORME FINAL DE VALIDACIÓN
+==================================================
+✅ Contactos válidos:     1004
+❌ Contactos inválidos:   6
+🔁 Contactos duplicados:  3
+🧹 % duplicados eliminados: 0%
+==================================================
 ```
 
 ---
 
 ## ❗ El problema que resuelve
 
-Cualquier empresa que tenga un **departamento de ventas, marketing o RRHH** acumula bases de datos de contactos con errores:
+Cualquier empresa con **ventas, marketing o RRHH** acumula bases de contactos con errores:
 
 | Problema habitual | Consecuencia real |
 |---|---|
-| Emails sin `@` o mal formateados | Campañas de email que fallan al enviarse |
-| Teléfonos con letras o demasiado cortos | Llamadas y SMS que no llegan |
-| Contactos duplicados en el CRM | Clientes que reciben el mismo mensaje dos veces |
-| Revisión manual de miles de filas | 3–4 horas de trabajo repetitivo cada semana |
+| Emails sin `@`, con erratas (`gmail.con`) | Campañas que fallan al enviarse |
+| Teléfonos con letras, cortos o con formatos distintos | Llamadas y SMS que no llegan |
+| Duplicados "sucios" (mayúsculas, espacios, `+34`) | El cliente recibe el mismo mensaje dos veces |
+| Leads sin priorizar | El comercial pierde el tiempo en contactos malos |
+| Revisión manual de miles de filas | Días de trabajo repetitivo |
 
-**Este script convierte esas horas en segundos.**
-
----
-
-## ⚙️ Funciones del script
-
-### `validar_email(email)`
-Comprueba que el email tenga un formato correcto: sin espacios, exactamente una `@`, usuario y dominio no vacíos, un punto bien colocado en el dominio y una extensión (TLD) de al menos 2 caracteres.
-```python
-validar_email("usuario@empresa.com")  # True
-validar_email("usuarioempresa.com")   # False — falta @
-validar_email("usuario@correo")       # False — falta punto en dominio
-validar_email("usuario@empresa.c")    # False — extensión demasiado corta
-validar_email("usuario@.com")         # False — punto pegado a la @
-```
-
-### `validar_telefono(telefono)`
-Verifica que el teléfono solo contenga dígitos y tenga entre 9 y 15 caracteres.
-```python
-validar_telefono("612345678")   # True
-validar_telefono("6123ABC78")   # False — contiene letras
-validar_telefono("12345")       # False — demasiado corto
-```
-
-### `validar_empresa(empresa)`
-Comprueba que el campo empresa no esté vacío.
-```python
-validar_empresa("TechCorp")  # True
-validar_empresa("")          # False — empresa vacía
-```
-
-### `detectar_duplicados(lista_contactos)`
-Recorre la lista completa y devuelve los nombres de contactos que aparecen más de una vez con los mismos datos.
-```python
-detectar_duplicados(contactos)  # ['Ana García']
-```
-
-### `generar_informe(validos, invalidos, duplicados)`
-Imprime un resumen visual al final con el conteo de cada categoría y guarda los resultados en archivos de texto.
+**Este script convierte esos días en segundos — y además prioriza los mejores leads.**
 
 ---
 
-## 📂 Estructura del proyecto
+## ⚙️ Qué hace, paso a paso
 
-```
-validador-contactos/
-│
-├── validador.py       # Script principal
-├── contactos.csv      # Datos de entrada (tu lista de contactos)
-├── validos.txt        # Salida generada automáticamente (no versionada)
-├── invalidos.txt      # Salida generada automáticamente (no versionada)
-├── duplicados.txt     # Salida generada automáticamente (no versionada)
-└── README.md          # Este documento
-```
+1. **Lee** `contactos.csv` (`nombre, email, telefono, empresa`).
+2. **Normaliza** los datos *solo para comparar* — el dato original **nunca** se altera.
+3. **Corrige erratas** de dominio (`gmail.con` → `gmail.com`).
+4. **Valida** email, teléfono, empresa y nombre.
+5. **Detecta duplicados** aunque vengan sucios: `Juan@Empresa.com ` y `juan@empresa.com`
+   se reconocen como la misma persona (clave normalizada email + teléfono).
+6. **Descarta** correos desechables (`@mailinator.com`, etc.).
+7. **Puntúa** cada lead de **0 a 100** y lo clasifica en **A / B / C / D**.
+8. **Exporta** los resultados en 6 formatos.
+
+---
+
+## 📂 Archivos que genera
+
+| Archivo | Para qué sirve |
+|---|---|
+| `validos.txt` | Válidos con su nota y categoría |
+| `invalidos.txt` | Inválidos **con el motivo** del rechazo |
+| `duplicados.txt` | Duplicados detectados (con el dato original) |
+| `leads_limpios.csv` | Base depurada y enriquecida (uso general) |
+| **`leads_salesforce.csv`** | **CSV listo para el Asistente de Importación de Salesforce** |
+| `informe.html` | 📊 Panel visual con métricas y rankings (ábrelo en el navegador) |
+
+---
+
+## 🧮 Cómo se puntúa un lead
+
+| Criterio | Puntos |
+|---|---|
+| Email válido | +40 |
+| Teléfono válido | +30 |
+| Empresa presente | +20 |
+| Nombre y apellido | +10 |
+| Email desechable | −30 |
+
+**Categorías:** `A (Oro)` ≥90 · `B (Bueno)` ≥70 · `C (Mejorable)` ≥40 · `D (Descartar)` <40.
+
+---
+
+## 🔗 Integración con Salesforce
+
+`leads_salesforce.csv` se importa **de un tirón** en el objeto **Lead**:
+
+- Cabeceras con los nombres de campo reales (`FirstName`, `LastName`, `Company`,
+  `Email`, `Phone`, `Rating`, `Status`) → **auto-mapeo**, sin trabajo manual.
+- Nombre partido en `FirstName` / `LastName` (Salesforce exige `LastName`).
+- Teléfono en formato internacional **E.164** (`+34612345678`), listo para CTI.
+- `Rating` traducido al picklist estándar (**Hot / Warm / Cold**).
+- **`External_Id__c` estable** (mismo lead → mismo ID): reimportar hace **upsert**
+  (actualiza), **no crea duplicados**.
+
+**Setup único (admin, ~5 min):** crear los campos personalizados `External_Id__c`
+(External Id, único) y `Lead_Score__c` (número) en el objeto Lead.
+
+---
+
+## 🧩 Funciones principales
+
+| Función | Responsabilidad |
+|---|---|
+| `normalizar_email/telefono/texto` | Limpian el dato *solo para comparar* |
+| `corregir_dominio_email` | Arregla erratas típicas de dominio |
+| `validar_email/telefono/empresa/nombre` | Reglas de validación |
+| `es_email_desechable` | Detecta correos temporales |
+| `detectar_duplicados` | Encuentra duplicados con clave normalizada |
+| `puntuar_lead` / `clasificar_lead` | Nota 0-100 y categoría A/B/C/D |
+| `estadisticas_por_empresa/dominio` | Rankings para el informe |
+| `formatear_telefono` / `telefono_e164` | Formato presentable / internacional |
+| `separar_nombre` / `id_externo` | Preparación para Salesforce (FirstName/LastName, upsert) |
+| `exportar_csv_limpio` / `exportar_salesforce` / `generar_informe_html` | Salidas |
+
+---
+
+## 🛣️ Roadmap (evolución a proceso productivo)
+
+- [ ] **Origen automático de datos** (formulario web / API en vez de CSV manual).
+- [ ] **Empuje directo vía Salesforce Bulk API** (sin subir el CSV a mano).
+- [ ] **Ejecución programada** (diaria) para mantener el CRM siempre limpio.
 
 ---
 
 ## ▶️ Cómo usarlo
 
-**1. Clona el repositorio**
-```bash
-git clone https://github.com/tu-usuario/validador-contactos.git
-cd validador-contactos
-```
-
-**2. Prepara tu archivo de contactos**
-
-Edita `contactos.csv` con tus propios datos. El formato es:
-```
-nombre,email,telefono,empresa
-Juan Pérez,juan@empresa.com,612345678,Mi Empresa SL
-```
-
-**3. Ejecuta el script**
 ```bash
 python validador.py
 ```
 
-**4. Revisa los resultados**
-
-Los archivos `validos.txt` e `invalidos.txt` se generan automáticamente con el resultado de la validación.
-
----
-
-## 🏢 Casos de uso reales
-
-- **Equipo de ventas**: limpia los leads exportados del CRM antes de una campaña de email marketing
-- **Departamento de RRHH**: valida la base de datos de candidatos antes de enviar comunicaciones masivas
-- **Marketing**: sanea la lista de contactos antes de importarla a Mailchimp, HubSpot o Salesforce
-- **Administración**: audita periódicamente la base de datos de proveedores o clientes
+Requisitos: **Python 3** (no necesita instalar nada más). Edita `contactos.csv`
+con tus datos (`nombre,email,telefono,empresa`) y ejecuta.
 
 ---
 
 ## 🛠️ Tecnologías y conceptos
 
 - **Python 3** — sin dependencias externas
-- **Módulo `csv`** — lectura de datos reales desde archivo
-- **Funciones** (`def`) — lógica separada por responsabilidad
-- **Condicionales** (`if/elif/else`) — clasificación de cada contacto
-- **Bucles** (`for`) — procesamiento automático de toda la lista
-- **Gestión de archivos** (`open`, `write`) — generación de informes
-
----
-
-## 📈 Escalabilidad
-
-Este script está diseñado como punto de partida. Se puede extender fácilmente para:
-
-- Exportar los resultados en CSV en lugar de TXT
-- Conectarse directamente a un CRM vía API
-- Procesar archivos con miles o decenas de miles de contactos
-- Añadir validación de formato de DNI o código postal
+- Módulos estándar `csv` y `hashlib`
+- Funciones con responsabilidad única · condicionales · bucles · gestión de archivos
+- Generación de **CSV, HTML y reportes de texto**
 
 ---
 
 ## ⚠️ Limitaciones conocidas
 
-- La validación de email comprueba el **formato** (estructura `usuario@dominio.ext`), pero no verifica que el buzón o el dominio existan realmente.
+- La validación de email comprueba el **formato**, no que el buzón o el dominio existan
+  realmente (eso requeriría verificación SMTP / API externa).
 
 ---
 
 ## 👤 Autor
 
-**Álvaro Utazu Lázaro** · En formación como AI Engineer  
-Proyecto desarrollado con [Claude Code](https://claude.ai) (Anthropic) como parte del programa de aprendizaje práctico de IA.
+**Álvaro Utazu Lázaro** · En formación como AI Engineer
+Proyecto desarrollado con [Claude Code](https://claude.ai) (Anthropic) como parte del
+programa de aprendizaje práctico de IA.
 
 ---
 
-*¿Tienes una base de datos que necesita limpiarse? Este script es el punto de partida.*
+*De una lista de contactos sucia a una base de leads priorizada y lista para vender.*

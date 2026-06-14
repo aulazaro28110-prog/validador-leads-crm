@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de Validación de Leads</title>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; background:#0f172a;
+         color:#e2e8f0; margin:0; padding:40px; }
+  h1 { color:#38bdf8; }
+  h2 { color:#94a3b8; border-bottom:1px solid #334155; padding-bottom:6px; }
+  .cards { display:flex; gap:20px; flex-wrap:wrap; margin:30px 0; }
+  .card { background:#1e293b; border-radius:14px; padding:24px 30px;
+           min-width:160px; box-shadow:0 4px 14px rgba(0,0,0,.3); }
+  .card .num { font-size:38px; font-weight:700; }
+  .card .lbl { color:#94a3b8; font-size:14px; }
+  .ok { color:#4ade80; } .bad { color:#f87171; } .dup { color:#fbbf24; }
+  table { width:100%; border-collapse:collapse; margin:14px 0 34px; }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid #334155; }
+  th { color:#38bdf8; }
+  tr:hover { background:#1e293b; }
+  .tablas { display:flex; gap:40px; flex-wrap:wrap; }
+  .tablas > div { flex:1; min-width:280px; }
+  footer { margin-top:40px; color:#64748b; font-size:13px; }
+</style>
+</head>
+<body>
+  <h1>📊 Informe de Validación de Leads</h1>
+  <p>Análisis automático de <b>1013</b> contactos importados.</p>
+  <div class="cards">
+    <div class="card"><div class="num ok">1004</div>
+      <div class="lbl">✅ Válidos (99%)</div></div>
+    <div class="card"><div class="num bad">6</div>
+      <div class="lbl">❌ Inválidos</div></div>
+    <div class="card"><div class="num dup">3</div>
+      <div class="lbl">🔁 Duplicados</div></div>
+    <div class="card"><div class="num">1013</div>
+      <div class="lbl">📇 Total procesados</div></div>
+  </div>
+
+  <h2>🏆 Mejores 10 leads (por puntuación)</h2>
+  <table>
+    <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Empresa</th>
+        <th>Nota</th><th>Categoría</th></tr>
+    <tr><td>Ana García</td><td>ana.garcia@empresa.com</td><td>+34 612 34 56 78</td><td>TechCorp</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Luis Martínez</td><td>luis.martinez@gmail.com</td><td>+34 698 76 54 32</td><td>Innova SL</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Sofía Romero</td><td>sofia.romero@empresa.com</td><td>+34 633 44 55 66</td><td>FinanceHub</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Beatriz Gil</td><td>beatriz.gil0@outlook.com</td><td>+34 901 81 59 08</td><td>EduPlus</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>María Moreno</td><td>maria.moreno1@outlook.com</td><td>+34 713 18 60 91</td><td>TravelGo</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Inés Hernández</td><td>ines.hernandez2@yahoo.com</td><td>+34 699 60 30 82</td><td>AutoParts</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Alba Gil</td><td>alba.gil3@yahoo.com</td><td>+34 694 82 19 93</td><td>NetSecure</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Sofía Cano</td><td>sofia.cano4@empresa.es</td><td>+34 690 93 78 65</td><td>SkyAir</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Óscar Cabrera</td><td>oscar.cabrera5@hotmail.com</td><td>+34 732 31 94 87</td><td>HealthCare SL</td><td><b>100</b></td><td>A (Oro)</td></tr><tr><td>Clara Herrera</td><td>clara.herrera6@hotmail.com</td><td>+34 911 86 25 27</td><td>SolarTech</td><td><b>100</b></td><td>A (Oro)</td></tr>
+  </table>
+
+  <div class="tablas">
+    <div>
+      <h2>🏢 Top empresas</h2>
+      <table><tr><th>Empresa</th><th>Leads</th></tr><tr><td>DataSoft</td><td>35</td></tr><tr><td>RedBricks</td><td>34</td></tr><tr><td>DataMine</td><td>33</td></tr><tr><td>SkyAir</td><td>32</td></tr><tr><td>TechCorp</td><td>31</td></tr></table>
+    </div>
+    <div>
+      <h2>📧 Top dominios de email</h2>
+      <table><tr><th>Dominio</th><th>Leads</th></tr><tr><td>empresa.com</td><td>181</td></tr><tr><td>yahoo.com</td><td>169</td></tr><tr><td>hotmail.com</td><td>167</td></tr><tr><td>outlook.com</td><td>166</td></tr><tr><td>empresa.es</td><td>165</td></tr></table>
+    </div>
+  </div>
+
+  <footer>Generado automáticamente por validador.py — sin librerías externas.</footer>
+</body>
+</html>

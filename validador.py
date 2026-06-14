@@ -1,12 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Validador de Contactos Empresariales
-Lee contactos.csv, valida emails y teléfonos, detecta duplicados
-y genera informes en validos.txt e invalidos.txt
+=============================================================================
+ VALIDADOR Y ENRIQUECEDOR DE LEADS COMERCIALES
+=============================================================================
+Lee 'contactos.csv', limpia y normaliza los datos, valida emails y teléfonos,
+corrige erratas típicas, detecta duplicados (aunque estén "sucios"), puntúa la
+calidad de cada lead (0-100) y genera varios informes:
+
+  - validos.txt / invalidos.txt / duplicados.txt   (detalle por categoría)
+  - leads_limpios.csv                              (base lista para el CRM)
+  - informe.html                                   (panel visual de resultados)
+
+Pensado para departamentos comerciales: convierte una lista de contactos
+"sucia" en una base de datos limpia, priorizada y lista para vender.
+=============================================================================
 """
 
 import csv
 import sys
+import hashlib
 
 # En Windows la consola usa cp1252 y no puede mostrar emojis.
 # Forzamos la salida a UTF-8 para que los prints con emojis se vean bien.
@@ -16,30 +28,58 @@ except AttributeError:
     pass
 
 
-def validar_email(email):
-    """Devuelve True si el email tiene un formato válido, False si no.
+# =============================================================================
+# 1) NORMALIZACIÓN  (solo para COMPARAR; el dato original nunca se altera)
+# =============================================================================
 
-    Comprueba: sin espacios, exactamente una @, usuario y dominio no vacíos,
-    un punto en el dominio que no esté pegado a la @ ni al final, y una
-    extensión (TLD) de al menos 2 caracteres.
-    """
+def normalizar_email(email):
+    """Email en minúsculas y sin espacios en los extremos. Solo para comparar."""
+    return email.strip().lower()
+
+
+def normalizar_telefono(telefono):
+    """Deja el teléfono solo con dígitos relevantes (quita adornos y prefijo +34)."""
+    t = telefono.strip()
+    t = t.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if t.startswith("+34"):
+        t = t[3:]
+    elif t.startswith("0034"):
+        t = t[4:]
+    return t
+
+
+def normalizar_texto(texto):
+    """Minúsculas, sin espacios sobrantes ni dobles. Para nombre y empresa."""
+    return " ".join(texto.strip().lower().split())
+
+
+def clave_contacto(contacto):
+    """Clave única (email + teléfono NORMALIZADOS) que identifica a la persona."""
+    return (
+        normalizar_email(corregir_dominio_email(contacto["email"])),
+        normalizar_telefono(contacto["telefono"]),
+    )
+
+
+# =============================================================================
+# 2) VALIDACIÓN
+# =============================================================================
+
+def validar_email(email):
+    """True si el email tiene formato válido (una @, dominio con punto, TLD>=2)."""
     email = email.strip()
-    # No se permiten espacios dentro del email
     if " " in email:
         return False
-    # Debe haber exactamente una @ (dos partes) y ninguna parte vacía
     partes = email.split("@")
     if len(partes) != 2:
         return False
     usuario, dominio = partes
     if usuario == "" or dominio == "":
         return False
-    # El dominio debe contener un punto que no esté al principio ni al final
     if "." not in dominio:
         return False
     if dominio.startswith(".") or dominio.endswith("."):
         return False
-    # La extensión (lo que va tras el último punto) debe tener al menos 2 letras
     extension = dominio.split(".")[-1]
     if len(extension) < 2:
         return False
@@ -47,35 +87,131 @@ def validar_email(email):
 
 
 def validar_telefono(telefono):
-    """Devuelve True si solo tiene números y tiene entre 9 y 15 dígitos, False si no."""
-    # Quitamos espacios por si acaso
-    telefono = telefono.strip()
-    if not telefono.isdigit():
-        return False
-    if 9 <= len(telefono) <= 15:
-        return True
-    return False
+    """True si, una vez normalizado, son solo dígitos y mide entre 9 y 15."""
+    t = normalizar_telefono(telefono)
+    return t.isdigit() and 9 <= len(t) <= 15
 
 
 def validar_empresa(empresa):
-    """Devuelve True si el campo empresa no está vacío, False si lo está."""
-    if empresa.strip() == "":
-        return False
-    return True
+    """True si el campo empresa no está vacío."""
+    return empresa.strip() != ""
 
+
+def validar_nombre(nombre):
+    """True si hay al menos nombre y apellido y todo son letras."""
+    partes = nombre.strip().split()
+    if len(partes) < 2:
+        return False
+    return all(parte.isalpha() for parte in partes)
+
+
+# =============================================================================
+# 3) LIMPIEZA Y CORRECCIÓN  (mejora el dato para la base final)
+# =============================================================================
+
+# Erratas de dominio más frecuentes al teclear un correo.
+ERRATAS_DOMINIO = {
+    "gmail.con": "gmail.com",
+    "gmail.co": "gmail.com",
+    "gmial.com": "gmail.com",
+    "gmai.com": "gmail.com",
+    "hotmial.com": "hotmail.com",
+    "hotmai.com": "hotmail.com",
+    "hotmail.con": "hotmail.com",
+    "outlok.com": "outlook.com",
+    "outloo.com": "outlook.com",
+    "yaho.com": "yahoo.com",
+    "yahooo.com": "yahoo.com",
+}
+
+
+def corregir_dominio_email(email):
+    """Corrige erratas típicas del dominio. Si no hay errata, lo deja igual."""
+    email = email.strip()
+    if "@" not in email:
+        return email
+    usuario, dominio = email.rsplit("@", 1)
+    dominio_corregido = ERRATAS_DOMINIO.get(dominio.lower(), dominio)
+    return f"{usuario}@{dominio_corregido}"
+
+
+def formatear_telefono(telefono):
+    """Deja el móvil con formato presentable: '+34 612 34 56 78'."""
+    t = normalizar_telefono(telefono)
+    if len(t) == 9 and t.isdigit():
+        return f"+34 {t[0:3]} {t[3:5]} {t[5:7]} {t[7:9]}"
+    return telefono.strip()
+
+
+def extraer_dominio(email):
+    """Devuelve el dominio del email (lo que va tras la @) en minúsculas."""
+    email = email.strip().lower()
+    if "@" in email:
+        return email.rsplit("@", 1)[1]
+    return ""
+
+
+# Dominios de correo temporal / desechable (señal de lead poco fiable).
+DOMINIOS_DESECHABLES = {
+    "mailinator.com", "tempmail.com", "10minutemail.com", "guerrillamail.com",
+    "throwaway.email", "yopmail.com", "trashmail.com", "getnada.com",
+}
+
+
+def es_email_desechable(email):
+    """True si el dominio del email es de los típicos 'usar y tirar'."""
+    return extraer_dominio(email) in DOMINIOS_DESECHABLES
+
+
+# =============================================================================
+# 4) PUNTUACIÓN DE CALIDAD DEL LEAD
+# =============================================================================
+
+def puntuar_lead(contacto):
+    """Da una nota 0-100 según lo completo y fiable que es el lead.
+
+    Email válido: 40 · Teléfono válido: 30 · Empresa: 20 · Nombre completo: 10.
+    Un email desechable resta 30 puntos (no llegará nunca el correo comercial).
+    """
+    puntos = 0
+    if validar_email(corregir_dominio_email(contacto["email"])):
+        puntos += 40
+    if validar_telefono(contacto["telefono"]):
+        puntos += 30
+    if validar_empresa(contacto["empresa"]):
+        puntos += 20
+    if validar_nombre(contacto["nombre"]):
+        puntos += 10
+    if es_email_desechable(contacto["email"]):
+        puntos -= 30
+    # Nos aseguramos de no devolver una nota negativa.
+    return max(0, puntos)
+
+
+def clasificar_lead(puntuacion):
+    """Convierte la nota numérica en una categoría comercial."""
+    if puntuacion >= 90:
+        return "A (Oro)"
+    if puntuacion >= 70:
+        return "B (Bueno)"
+    if puntuacion >= 40:
+        return "C (Mejorable)"
+    return "D (Descartar)"
+
+
+# =============================================================================
+# 5) DUPLICADOS
+# =============================================================================
 
 def detectar_duplicados(lista_contactos):
-    """Recibe la lista completa y devuelve los nombres de los contactos duplicados."""
+    """Devuelve los NOMBRES ORIGINALES de los contactos repetidos.
+
+    Compara con la clave normalizada, así caen los casi-duplicados.
+    """
     vistos = []
     duplicados = []
     for contacto in lista_contactos:
-        # Clave única: combinamos todos los campos para detectar duplicados EXACTOS
-        clave = (
-            contacto["nombre"],
-            contacto["email"],
-            contacto["telefono"],
-            contacto["empresa"],
-        )
+        clave = clave_contacto(contacto)
         if clave in vistos:
             if contacto["nombre"] not in duplicados:
                 duplicados.append(contacto["nombre"])
@@ -84,31 +220,248 @@ def detectar_duplicados(lista_contactos):
     return duplicados
 
 
+# =============================================================================
+# 6) ESTADÍSTICAS
+# =============================================================================
+
+def estadisticas_por_empresa(contactos, top=5):
+    """Devuelve las 'top' empresas con más leads, como lista de (empresa, nº)."""
+    conteo = {}
+    for c in contactos:
+        empresa = c["empresa"].strip() or "(sin empresa)"
+        conteo[empresa] = conteo.get(empresa, 0) + 1
+    return sorted(conteo.items(), key=lambda par: par[1], reverse=True)[:top]
+
+
+def estadisticas_por_dominio(contactos, top=5):
+    """Devuelve los 'top' dominios de email más frecuentes, como (dominio, nº)."""
+    conteo = {}
+    for c in contactos:
+        dominio = extraer_dominio(c["email"]) or "(sin dominio)"
+        conteo[dominio] = conteo.get(dominio, 0) + 1
+    return sorted(conteo.items(), key=lambda par: par[1], reverse=True)[:top]
+
+
+# =============================================================================
+# 7) INFORMES Y EXPORTACIÓN
+# =============================================================================
+
 def generar_informe(validos, invalidos, duplicados):
-    """Imprime un resumen final con el conteo de cada categoría."""
-    print("\n" + "=" * 45)
+    """Imprime en consola el resumen final con conteos y porcentaje."""
+    print("\n" + "=" * 50)
     print("📊 INFORME FINAL DE VALIDACIÓN")
-    print("=" * 45)
+    print("=" * 50)
     print(f"✅ Contactos válidos:     {len(validos)}")
     print(f"❌ Contactos inválidos:   {len(invalidos)}")
     print(f"🔁 Contactos duplicados:  {len(duplicados)}")
     if duplicados:
-        print(f"   👉 Nombres duplicados: {', '.join(duplicados)}")
+        muestra = ", ".join(duplicados[:5])
+        extra = "..." if len(duplicados) > 5 else ""
+        print(f"   👉 Ejemplos duplicados: {muestra}{extra}")
     total = len(validos) + len(invalidos) + len(duplicados)
     print(f"📇 Total procesados:      {total}")
-    print("=" * 45)
-    print("📄 Revisa 'validos.txt', 'invalidos.txt' y 'duplicados.txt' para el detalle.")
-    print("=" * 45 + "\n")
+    if total > 0:
+        porcentaje = round(len(duplicados) / total * 100)
+    else:
+        porcentaje = 0
+    print(f"🧹 % duplicados eliminados: {porcentaje}%")
+    print("=" * 50)
 
+
+def exportar_csv_limpio(validos, ruta="leads_limpios.csv"):
+    """Genera un CSV depurado y enriquecido, listo para importar al CRM."""
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        escritor = csv.writer(f)
+        escritor.writerow(
+            ["nombre", "email", "telefono", "empresa", "dominio",
+             "puntuacion", "categoria"]
+        )
+        for c in validos:
+            email_corregido = corregir_dominio_email(c["email"])
+            escritor.writerow([
+                c["nombre"].strip(),
+                email_corregido,
+                formatear_telefono(c["telefono"]),
+                c["empresa"].strip(),
+                extraer_dominio(email_corregido),
+                c["puntuacion"],
+                c["categoria"],
+            ])
+
+
+def separar_nombre(nombre):
+    """Parte 'Ana García' en (FirstName, LastName) que es lo que pide Salesforce.
+
+    LastName es obligatorio en Salesforce; si solo hay una palabra la usamos como
+    apellido para no dejar vacío el campo requerido.
+    """
+    partes = nombre.strip().split()
+    if len(partes) == 0:
+        return ("", "")
+    if len(partes) == 1:
+        return ("", partes[0])
+    return (partes[0], " ".join(partes[1:]))
+
+
+def telefono_e164(telefono):
+    """Formato internacional sin espacios '+34612345678' (ideal para CRM/CTI)."""
+    t = normalizar_telefono(telefono)
+    if len(t) == 9 and t.isdigit():
+        return "+34" + t
+    return telefono.strip()
+
+
+def rating_salesforce(puntuacion):
+    """Traduce la nota 0-100 al picklist estándar de Salesforce (Hot/Warm/Cold)."""
+    if puntuacion >= 90:
+        return "Hot"
+    if puntuacion >= 70:
+        return "Warm"
+    return "Cold"
+
+
+def id_externo(contacto):
+    """ID externo ESTABLE (mismo lead -> mismo ID) para hacer 'upsert' sin duplicar.
+
+    Usamos un hash de la clave normalizada (email+teléfono). hashlib da un valor
+    reproducible entre ejecuciones, justo lo que Salesforce necesita como
+    External Id para reimportar sin crear copias.
+    """
+    email_norm, tlf_norm = clave_contacto(contacto)
+    base = f"{email_norm}|{tlf_norm}"
+    return "LD-" + hashlib.md5(base.encode("utf-8")).hexdigest()[:12]
+
+
+def exportar_salesforce(validos, ruta="leads_salesforce.csv"):
+    """Genera un CSV listo para el Asistente de Importación de Salesforce (objeto Lead).
+
+    Cabeceras con los nombres de campo de Salesforce -> se auto-mapean solas.
+    Incluye External_Id__c para que reimportar haga 'upsert' (actualiza, no duplica).
+    """
+    columnas = [
+        "External_Id__c", "FirstName", "LastName", "Company", "Email", "Phone",
+        "LeadSource", "Rating", "Lead_Score__c", "Status",
+    ]
+    with open(ruta, "w", encoding="utf-8", newline="") as f:
+        escritor = csv.writer(f)
+        escritor.writerow(columnas)
+        for c in validos:
+            nombre_pila, apellidos = separar_nombre(c["nombre"])
+            email = corregir_dominio_email(c["email"])
+            empresa = c["empresa"].strip() or "(Desconocida)"  # Company es obligatorio
+            escritor.writerow([
+                id_externo(c),
+                nombre_pila,
+                apellidos,
+                empresa,
+                email,
+                telefono_e164(c["telefono"]),
+                "Validador Python",
+                rating_salesforce(c["puntuacion"]),
+                c["puntuacion"],
+                "Open - Not Contacted",
+            ])
+
+
+def generar_informe_html(validos, invalidos, duplicados, contactos,
+                         ruta="informe.html"):
+    """Crea un panel HTML visual con las métricas clave y los mejores leads."""
+    total = len(contactos)
+    n_val, n_inv, n_dup = len(validos), len(invalidos), len(duplicados)
+    pct_val = round(n_val / total * 100) if total else 0
+    # Mejores leads: ordenados por puntuación de mayor a menor.
+    mejores = sorted(validos, key=lambda c: c["puntuacion"], reverse=True)[:10]
+    top_empresas = estadisticas_por_empresa(contactos)
+    top_dominios = estadisticas_por_dominio(contactos)
+
+    filas_leads = "".join(
+        f"<tr><td>{c['nombre']}</td><td>{corregir_dominio_email(c['email'])}</td>"
+        f"<td>{formatear_telefono(c['telefono'])}</td><td>{c['empresa']}</td>"
+        f"<td><b>{c['puntuacion']}</b></td><td>{c['categoria']}</td></tr>"
+        for c in mejores
+    )
+    filas_empresas = "".join(
+        f"<tr><td>{nombre}</td><td>{n}</td></tr>" for nombre, n in top_empresas
+    )
+    filas_dominios = "".join(
+        f"<tr><td>{nombre}</td><td>{n}</td></tr>" for nombre, n in top_dominios
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Informe de Validación de Leads</title>
+<style>
+  body {{ font-family: 'Segoe UI', Arial, sans-serif; background:#0f172a;
+         color:#e2e8f0; margin:0; padding:40px; }}
+  h1 {{ color:#38bdf8; }}
+  h2 {{ color:#94a3b8; border-bottom:1px solid #334155; padding-bottom:6px; }}
+  .cards {{ display:flex; gap:20px; flex-wrap:wrap; margin:30px 0; }}
+  .card {{ background:#1e293b; border-radius:14px; padding:24px 30px;
+           min-width:160px; box-shadow:0 4px 14px rgba(0,0,0,.3); }}
+  .card .num {{ font-size:38px; font-weight:700; }}
+  .card .lbl {{ color:#94a3b8; font-size:14px; }}
+  .ok {{ color:#4ade80; }} .bad {{ color:#f87171; }} .dup {{ color:#fbbf24; }}
+  table {{ width:100%; border-collapse:collapse; margin:14px 0 34px; }}
+  th,td {{ text-align:left; padding:10px 12px; border-bottom:1px solid #334155; }}
+  th {{ color:#38bdf8; }}
+  tr:hover {{ background:#1e293b; }}
+  .tablas {{ display:flex; gap:40px; flex-wrap:wrap; }}
+  .tablas > div {{ flex:1; min-width:280px; }}
+  footer {{ margin-top:40px; color:#64748b; font-size:13px; }}
+</style>
+</head>
+<body>
+  <h1>📊 Informe de Validación de Leads</h1>
+  <p>Análisis automático de <b>{total}</b> contactos importados.</p>
+  <div class="cards">
+    <div class="card"><div class="num ok">{n_val}</div>
+      <div class="lbl">✅ Válidos ({pct_val}%)</div></div>
+    <div class="card"><div class="num bad">{n_inv}</div>
+      <div class="lbl">❌ Inválidos</div></div>
+    <div class="card"><div class="num dup">{n_dup}</div>
+      <div class="lbl">🔁 Duplicados</div></div>
+    <div class="card"><div class="num">{total}</div>
+      <div class="lbl">📇 Total procesados</div></div>
+  </div>
+
+  <h2>🏆 Mejores 10 leads (por puntuación)</h2>
+  <table>
+    <tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Empresa</th>
+        <th>Nota</th><th>Categoría</th></tr>
+    {filas_leads}
+  </table>
+
+  <div class="tablas">
+    <div>
+      <h2>🏢 Top empresas</h2>
+      <table><tr><th>Empresa</th><th>Leads</th></tr>{filas_empresas}</table>
+    </div>
+    <div>
+      <h2>📧 Top dominios de email</h2>
+      <table><tr><th>Dominio</th><th>Leads</th></tr>{filas_dominios}</table>
+    </div>
+  </div>
+
+  <footer>Generado automáticamente por validador.py — sin librerías externas.</footer>
+</body>
+</html>"""
+
+    with open(ruta, "w", encoding="utf-8") as f:
+        f.write(html)
+
+
+# =============================================================================
+# 8) PROGRAMA PRINCIPAL
+# =============================================================================
 
 def main():
-    print("🚀 Iniciando validador de contactos empresariales...\n")
+    print("🚀 Iniciando validador y enriquecedor de leads...\n")
 
     contactos = []
-    # Leemos el CSV con el módulo csv (incluido en Python, no hace falta instalar nada)
     with open("contactos.csv", "r", encoding="utf-8") as archivo:
-        lector = csv.DictReader(archivo)
-        for fila in lector:
+        for fila in csv.DictReader(archivo):
             contactos.append(fila)
 
     print(f"📥 Se han leído {len(contactos)} contactos del archivo.\n")
@@ -116,81 +469,75 @@ def main():
     validos = []
     invalidos = []
     duplicados_contactos = []
-    vistos = []  # claves de contactos ya procesados, para detectar repetidos
+    vistos = []
 
-    # Recorremos cada contacto con un bucle for
     for contacto in contactos:
         nombre = contacto["nombre"]
-        email = contacto["email"]
-        telefono = contacto["telefono"]
 
-        # Clave única con todos los campos: si ya la hemos visto, es un duplicado exacto
-        clave = (nombre, email, telefono, contacto["empresa"])
+        # 1) ¿Es un duplicado de alguien ya procesado? (clave normalizada)
+        clave = clave_contacto(contacto)
         if clave in vistos:
             contacto["motivo"] = "Contacto duplicado"
             duplicados_contactos.append(contacto)
-            print(f"🔁 {nombre}: contacto duplicado (omitido de válidos)")
             continue
         vistos.append(clave)
 
-        empresa = contacto["empresa"]
+        # 2) Puntuamos y clasificamos el lead.
+        contacto["puntuacion"] = puntuar_lead(contacto)
+        contacto["categoria"] = clasificar_lead(contacto["puntuacion"])
 
-        # Recogemos todos los motivos de error que tenga el contacto
+        # 3) Recogemos los motivos de error (si los hay).
         errores = []
-        if not validar_email(email):
+        if not validar_email(corregir_dominio_email(contacto["email"])):
             errores.append("email incorrecto")
-        if not validar_telefono(telefono):
+        if not validar_telefono(contacto["telefono"]):
             errores.append("teléfono incorrecto")
-        if not validar_empresa(empresa):
+        if not validar_empresa(contacto["empresa"]):
             errores.append("empresa vacía")
+        if es_email_desechable(contacto["email"]):
+            errores.append("email desechable")
 
-        # Clasificamos con if / elif / else según el número de errores
-        if len(errores) == 0:
+        # 4) Clasificamos en válidos o inválidos.
+        if not errores:
             validos.append(contacto)
-            print(f"✅ {nombre}: contacto válido")
-        elif len(errores) == 1:
-            contacto["motivo"] = errores[0].capitalize()
-            invalidos.append(contacto)
-            print(f"❌ {nombre}: {errores[0]}")
         else:
             contacto["motivo"] = " y ".join(errores).capitalize()
             invalidos.append(contacto)
-            print(f"❌ {nombre}: {' y '.join(errores)}")
 
-    # Detectamos duplicados sobre la lista completa
     duplicados = detectar_duplicados(contactos)
 
-    # Guardamos los contactos válidos en validos.txt
+    # --- Archivos de detalle (dato ORIGINAL, no normalizado) ---
     with open("validos.txt", "w", encoding="utf-8") as f:
-        f.write("CONTACTOS VÁLIDOS\n")
-        f.write("=" * 40 + "\n")
+        f.write("CONTACTOS VÁLIDOS\n" + "=" * 40 + "\n")
         for c in validos:
-            f.write(
-                f"{c['nombre']} | {c['email']} | {c['telefono']} | {c['empresa']}\n"
-            )
+            f.write(f"{c['nombre']} | {c['email']} | {c['telefono']} | "
+                    f"{c['empresa']} | nota {c['puntuacion']} | {c['categoria']}\n")
 
-    # Guardamos los contactos inválidos con su motivo en invalidos.txt
     with open("invalidos.txt", "w", encoding="utf-8") as f:
-        f.write("CONTACTOS INVÁLIDOS\n")
-        f.write("=" * 40 + "\n")
+        f.write("CONTACTOS INVÁLIDOS\n" + "=" * 40 + "\n")
         for c in invalidos:
-            f.write(
-                f"{c['nombre']} | {c['email']} | {c['telefono']} | "
-                f"{c['empresa']} -> MOTIVO: {c['motivo']}\n"
-            )
+            f.write(f"{c['nombre']} | {c['email']} | {c['telefono']} | "
+                    f"{c['empresa']} -> MOTIVO: {c['motivo']}\n")
 
-    # Guardamos los contactos duplicados en duplicados.txt
     with open("duplicados.txt", "w", encoding="utf-8") as f:
-        f.write("CONTACTOS DUPLICADOS\n")
-        f.write("=" * 40 + "\n")
+        f.write("CONTACTOS DUPLICADOS\n" + "=" * 40 + "\n")
         for c in duplicados_contactos:
-            f.write(
-                f"{c['nombre']} | {c['email']} | {c['telefono']} | {c['empresa']}\n"
-            )
+            f.write(f"{c['nombre']} | {c['email']} | {c['telefono']} | "
+                    f"{c['empresa']}\n")
 
-    print("\n💾 Archivos 'validos.txt', 'invalidos.txt' y 'duplicados.txt' guardados.")
+    # --- Salidas "premium": CSV limpio + Salesforce-ready + panel HTML ---
+    exportar_csv_limpio(validos)
+    exportar_salesforce(validos)
+    generar_informe_html(validos, invalidos, duplicados, contactos)
 
-    # Mostramos el resumen final
+    print("💾 Guardados: validos.txt, invalidos.txt, duplicados.txt,")
+    print("            leads_limpios.csv, leads_salesforce.csv e informe.html\n")
+
+    # Pequeño ranking en consola para ver el valor de un vistazo.
+    print("🏢 Top empresas por nº de leads:")
+    for nombre, n in estadisticas_por_empresa(contactos):
+        print(f"   - {nombre}: {n}")
+
     generar_informe(validos, invalidos, duplicados)
 
 
@@ -199,11 +546,12 @@ if __name__ == "__main__":
 
 
 # -----------------------------------------------------------------------------
-# QUÉ HACE: Lee una lista de contactos desde un CSV, valida que el email y el
-#           teléfono tengan un formato correcto, detecta contactos duplicados y
-#           genera dos archivos de salida (válidos e inválidos con su motivo).
-# PARA QUIÉN: Útil para cualquier empresa con departamento comercial o de RRHH
-#             que gestione bases de datos de clientes, leads o proveedores.
-# TIEMPO QUE AHORRA: Revisar 1.000 contactos a mano lleva horas; este script lo
-#                    hace en segundos, evitando errores de envío y datos sucios.
+# QUÉ HACE: Toma una lista de contactos "sucia" (CSV), la limpia, corrige
+#           erratas, valida email y teléfono, elimina duplicados aunque vengan
+#           con mayúsculas/espacios/prefijos, puntúa cada lead de 0 a 100 y
+#           genera una base limpia para el CRM más un panel visual en HTML.
+# PARA QUIÉN: Equipos comerciales / RRHH que gestionan bases de leads, clientes
+#             o proveedores y necesitan datos fiables y priorizados.
+# TIEMPO QUE AHORRA: Depurar y priorizar miles de contactos a mano lleva días;
+#                    este script lo hace en segundos y sin errores humanos.
 # -----------------------------------------------------------------------------
