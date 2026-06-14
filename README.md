@@ -124,6 +124,39 @@ Cualquier empresa con **ventas, marketing o RRHH** acumula bases de contactos co
 
 ---
 
+## 🔁 Uso diario: Mini-CRM (`crm.py`)
+
+El validador limpia los datos una vez; el **Mini-CRM los convierte en una rutina
+diaria de seguimiento comercial**. `crm.py` **reutiliza el núcleo del validador**
+(`from validador import normalizar_email`), así que el validador deja de ser una
+herramienta de un solo uso y pasa a ser la base de la que tira el CRM.
+
+Base de datos local: `seguimiento.csv` (se crea sola la primera vez).
+Estados de un lead: `nuevo` → `seguimiento` → `cerrado` / `descartado`.
+
+```bash
+python validador.py                      # 1. limpia la lista nueva de leads
+python crm.py importar                   # 2. mete los nuevos en el CRM (sin duplicar)
+python crm.py hoy                        # 3. ¿a quién toca contactar hoy?
+python crm.py contactado juan@x.com      # 4. tras llamar: reagenda +3 días
+python crm.py nota juan@x.com "Pide oferta"   # apunta detalles (con fecha)
+python crm.py cerrar juan@x.com          # venta hecha -> sale de la agenda
+python crm.py descartar juan@x.com       # no interesa -> sale de la agenda
+python crm.py listar                     # ver todo el CRM
+```
+
+Ejemplo de `python crm.py hoy`:
+
+```
+== 📅 LEADS PARA HOY (12) ==
+   [ ] Ana García            | TechCorp         | nuevo
+       ana.garcia@empresa.com · +34 612 34 56 78
+   [ ] Luis Martínez         | Innova SL        | seguimiento (atrasado 2d)
+       luis.martinez@gmail.com · +34 698 76 54 32
+```
+
+---
+
 ## 🛣️ Roadmap (evolución a proceso productivo)
 
 - [ ] **Origen automático de datos** (formulario web / API en vez de CSV manual).
@@ -146,9 +179,10 @@ con tus datos (`nombre,email,telefono,empresa`) y ejecuta.
 ## 🛠️ Tecnologías y conceptos
 
 - **Python 3** — sin dependencias externas
-- Módulos estándar `csv` y `hashlib`
+- Módulos estándar `csv`, `hashlib`, `html`, `datetime`, `os`, `sys`
+- **Código reutilizable**: `crm.py` importa el núcleo de `validador.py`
 - Funciones con responsabilidad única · condicionales · bucles · gestión de archivos
-- Generación de **CSV, HTML y reportes de texto**
+- Generación de **CSV, HTML y reportes de texto** · mini-CRM por línea de comandos
 
 ---
 
