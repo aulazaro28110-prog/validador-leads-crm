@@ -42,7 +42,7 @@ def cargar_plantilla(ruta=PLANTILLA):
 
     Si la primera línea empieza por 'Asunto:', se usa como asunto del email.
     """
-    with open(ruta, "r", encoding="utf-8") as f:
+    with open(ruta, "r", encoding="utf-8-sig") as f:
         lineas = f.read().split("\n")
 
     asunto = "Hola"
@@ -79,7 +79,7 @@ def main():
 
     asunto_plantilla, cuerpo_plantilla = cargar_plantilla()
 
-    with open(CRM, "r", encoding="utf-8") as f:
+    with open(CRM, "r", encoding="utf-8-sig") as f:
         leads = list(csv.DictReader(f))
 
     # Solo generamos mensajes para los leads que aún no se han contactado.

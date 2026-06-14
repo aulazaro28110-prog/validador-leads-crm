@@ -206,14 +206,16 @@ def detectar_duplicados(lista_contactos):
     casi-duplicados (mayúsculas, espacios, prefijo +34...), no solo los exactos.
     El primero de cada persona se considera único; las repeticiones se devuelven.
     """
-    vistos = []
+    # 'vistos' es un set: comprobar 'clave in vistos' es instantáneo (O(1)),
+    # así el total es O(n). Con una lista sería O(n²) y se arrastraría con miles.
+    vistos = set()
     duplicados = []
     for contacto in lista_contactos:
         clave = clave_contacto(contacto)
         if clave in vistos:
             duplicados.append(contacto)
         else:
-            vistos.append(clave)
+            vistos.add(clave)
     return duplicados
 
 
@@ -466,7 +468,8 @@ def main():
 
     campos = ["nombre", "email", "telefono", "empresa"]
     contactos = []
-    with open("contactos.csv", "r", encoding="utf-8") as archivo:
+    # utf-8-sig se "come" el BOM que añade Excel al guardar como 'CSV UTF-8'.
+    with open("contactos.csv", "r", encoding="utf-8-sig") as archivo:
         for fila in csv.DictReader(archivo):
             # Robustez: si a una fila le falta un campo, lo dejamos en "" en vez
             # de None (así .strip() nunca falla con una fila mal formada).

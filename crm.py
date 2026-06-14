@@ -57,7 +57,7 @@ def cargar_db():
     """Lee seguimiento.csv y devuelve la lista de leads (vacía si no existe)."""
     if not os.path.exists(DB):
         return []
-    with open(DB, "r", encoding="utf-8") as f:
+    with open(DB, "r", encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
 
 
@@ -85,13 +85,19 @@ def comando_importar():
         return
 
     leads = cargar_db()
-    with open(ENTRADA, "r", encoding="utf-8") as f:
+    with open(ENTRADA, "r", encoding="utf-8-sig") as f:
         nuevos_origen = list(csv.DictReader(f))
+
+    # Set con los emails ya presentes: comprobar si un lead existe es O(1),
+    # así importar miles de contactos es O(n) en vez de O(n²).
+    existentes = {normalizar_email(l["email"]) for l in leads}
 
     añadidos = 0
     for fila in nuevos_origen:
-        if buscar(leads, fila["email"]) is not None:
-            continue  # ya está en el CRM, no lo duplicamos
+        clave = normalizar_email(fila["email"])
+        if clave in existentes:
+            continue  # ya está en el CRM (o repetido en el origen), no lo duplicamos
+        existentes.add(clave)
         leads.append({
             "email": fila["email"],
             "nombre": fila["nombre"],
