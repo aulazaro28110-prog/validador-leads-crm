@@ -2,12 +2,18 @@ Asunto: Una idea para {empresa}
 
 Hola {nombre_pila}:
 
-Soy [TU NOMBRE], de [TU EMPRESA]. Me pongo en contacto contigo porque ayudamos
-a empresas como {empresa} a [BENEFICIO CONCRETO QUE OFRECES].
+Te escribo directamente porque he estado viendo {empresa} y creo que puedo
+aportaros algo concreto.
 
-¿Tendrías 15 minutos esta semana para que te cuente cómo? Si te encaja, dime
-qué día te viene bien y lo agendamos.
+En VentIA ayudamos a equipos comerciales a dejar de perder tiempo (y leads) por
+culpa de bases de datos sucias: automatizamos la limpieza, la priorización y el
+seguimiento de los contactos. Con un equipo de ventas de 8 personas conseguimos
+recuperar 6 horas a la semana y que no se les escapara ni un solo lead, en menos
+de un mes.
+
+Si esto es una prioridad para {empresa} ahora mismo, te resumo en 2 líneas cómo
+lo enfocaríamos en vuestro caso. ¿Te lo mando?
 
 Un saludo,
-[TU NOMBRE]
-[TU EMPRESA] · [TU TELÉFONO]
+Álvaro Utazu
+VentIA · 600 123 456
