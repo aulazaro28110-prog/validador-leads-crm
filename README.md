@@ -111,7 +111,7 @@ Cualquier empresa con **ventas, marketing o RRHH** acumula bases de contactos co
 
 | Función | Responsabilidad |
 |---|---|
-| `normalizar_email/telefono/texto` | Limpian el dato *solo para comparar* |
+| `normalizar_email/telefono` | Limpian el dato *solo para comparar* |
 | `corregir_dominio_email` | Arregla erratas típicas de dominio |
 | `validar_email/telefono/empresa/nombre` | Reglas de validación |
 | `es_email_desechable` | Detecta correos temporales |

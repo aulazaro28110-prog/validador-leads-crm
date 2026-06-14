@@ -19,6 +19,7 @@ Pensado para departamentos comerciales: convierte una lista de contactos
 import csv
 import sys
 import hashlib
+from html import escape
 
 # En Windows la consola usa cp1252 y no puede mostrar emojis.
 # Forzamos la salida a UTF-8 para que los prints con emojis se vean bien.
@@ -46,11 +47,6 @@ def normalizar_telefono(telefono):
     elif t.startswith("0034"):
         t = t[4:]
     return t
-
-
-def normalizar_texto(texto):
-    """Minúsculas, sin espacios sobrantes ni dobles. Para nombre y empresa."""
-    return " ".join(texto.strip().lower().split())
 
 
 def clave_contacto(contacto):
@@ -204,17 +200,18 @@ def clasificar_lead(puntuacion):
 # =============================================================================
 
 def detectar_duplicados(lista_contactos):
-    """Devuelve los NOMBRES ORIGINALES de los contactos repetidos.
+    """Devuelve los CONTACTOS duplicados, conservando su dato ORIGINAL.
 
-    Compara con la clave normalizada, así caen los casi-duplicados.
+    Compara con la clave normalizada (email + teléfono), así caen también los
+    casi-duplicados (mayúsculas, espacios, prefijo +34...), no solo los exactos.
+    El primero de cada persona se considera único; las repeticiones se devuelven.
     """
     vistos = []
     duplicados = []
     for contacto in lista_contactos:
         clave = clave_contacto(contacto)
         if clave in vistos:
-            if contacto["nombre"] not in duplicados:
-                duplicados.append(contacto["nombre"])
+            duplicados.append(contacto)
         else:
             vistos.append(clave)
     return duplicados
@@ -255,13 +252,18 @@ def generar_informe(validos, invalidos, duplicados):
     print(f"❌ Contactos inválidos:   {len(invalidos)}")
     print(f"🔁 Contactos duplicados:  {len(duplicados)}")
     if duplicados:
-        muestra = ", ".join(duplicados[:5])
-        extra = "..." if len(duplicados) > 5 else ""
+        # 'duplicados' es una lista de contactos; sacamos nombres únicos de ejemplo.
+        nombres = []
+        for c in duplicados:
+            if c["nombre"] not in nombres:
+                nombres.append(c["nombre"])
+        muestra = ", ".join(nombres[:5])
+        extra = "..." if len(nombres) > 5 else ""
         print(f"   👉 Ejemplos duplicados: {muestra}{extra}")
     total = len(validos) + len(invalidos) + len(duplicados)
     print(f"📇 Total procesados:      {total}")
     if total > 0:
-        porcentaje = round(len(duplicados) / total * 100)
+        porcentaje = round(len(duplicados) / total * 100, 1)
     else:
         porcentaje = 0
     print(f"🧹 % duplicados eliminados: {porcentaje}%")
@@ -374,17 +376,20 @@ def generar_informe_html(validos, invalidos, duplicados, contactos,
     top_empresas = estadisticas_por_empresa(contactos)
     top_dominios = estadisticas_por_dominio(contactos)
 
+    # escape() evita que un nombre con < o & rompa el HTML del informe.
     filas_leads = "".join(
-        f"<tr><td>{c['nombre']}</td><td>{corregir_dominio_email(c['email'])}</td>"
-        f"<td>{formatear_telefono(c['telefono'])}</td><td>{c['empresa']}</td>"
-        f"<td><b>{c['puntuacion']}</b></td><td>{c['categoria']}</td></tr>"
+        f"<tr><td>{escape(c['nombre'])}</td>"
+        f"<td>{escape(corregir_dominio_email(c['email']))}</td>"
+        f"<td>{escape(formatear_telefono(c['telefono']))}</td>"
+        f"<td>{escape(c['empresa'])}</td>"
+        f"<td><b>{c['puntuacion']}</b></td><td>{escape(c['categoria'])}</td></tr>"
         for c in mejores
     )
     filas_empresas = "".join(
-        f"<tr><td>{nombre}</td><td>{n}</td></tr>" for nombre, n in top_empresas
+        f"<tr><td>{escape(nombre)}</td><td>{n}</td></tr>" for nombre, n in top_empresas
     )
     filas_dominios = "".join(
-        f"<tr><td>{nombre}</td><td>{n}</td></tr>" for nombre, n in top_dominios
+        f"<tr><td>{escape(nombre)}</td><td>{n}</td></tr>" for nombre, n in top_dominios
     )
 
     html = f"""<!DOCTYPE html>
@@ -459,34 +464,34 @@ def generar_informe_html(validos, invalidos, duplicados, contactos,
 def main():
     print("🚀 Iniciando validador y enriquecedor de leads...\n")
 
+    campos = ["nombre", "email", "telefono", "empresa"]
     contactos = []
     with open("contactos.csv", "r", encoding="utf-8") as archivo:
         for fila in csv.DictReader(archivo):
-            contactos.append(fila)
+            # Robustez: si a una fila le falta un campo, lo dejamos en "" en vez
+            # de None (así .strip() nunca falla con una fila mal formada).
+            contactos.append({campo: (fila.get(campo) or "") for campo in campos})
 
     print(f"📥 Se han leído {len(contactos)} contactos del archivo.\n")
 
+    # Paso A: separar los duplicados (conservan su dato original). Una sola pasada.
+    duplicados_contactos = detectar_duplicados(contactos)
+    filas_duplicadas = {id(c) for c in duplicados_contactos}  # identidad de cada fila
+    for c in duplicados_contactos:
+        c["motivo"] = "Contacto duplicado"
+
+    # Paso B: clasificar el resto (los únicos) en válidos o inválidos.
     validos = []
     invalidos = []
-    duplicados_contactos = []
-    vistos = []
-
     for contacto in contactos:
-        nombre = contacto["nombre"]
+        if id(contacto) in filas_duplicadas:
+            continue  # ya está contado como duplicado, no se reprocesa
 
-        # 1) ¿Es un duplicado de alguien ya procesado? (clave normalizada)
-        clave = clave_contacto(contacto)
-        if clave in vistos:
-            contacto["motivo"] = "Contacto duplicado"
-            duplicados_contactos.append(contacto)
-            continue
-        vistos.append(clave)
-
-        # 2) Puntuamos y clasificamos el lead.
+        # Puntuamos y clasificamos el lead.
         contacto["puntuacion"] = puntuar_lead(contacto)
         contacto["categoria"] = clasificar_lead(contacto["puntuacion"])
 
-        # 3) Recogemos los motivos de error (si los hay).
+        # Recogemos los motivos de error (si los hay).
         errores = []
         if not validar_email(corregir_dominio_email(contacto["email"])):
             errores.append("email incorrecto")
@@ -497,14 +502,11 @@ def main():
         if es_email_desechable(contacto["email"]):
             errores.append("email desechable")
 
-        # 4) Clasificamos en válidos o inválidos.
         if not errores:
             validos.append(contacto)
         else:
             contacto["motivo"] = " y ".join(errores).capitalize()
             invalidos.append(contacto)
-
-    duplicados = detectar_duplicados(contactos)
 
     # --- Archivos de detalle (dato ORIGINAL, no normalizado) ---
     with open("validos.txt", "w", encoding="utf-8") as f:
@@ -528,7 +530,7 @@ def main():
     # --- Salidas "premium": CSV limpio + Salesforce-ready + panel HTML ---
     exportar_csv_limpio(validos)
     exportar_salesforce(validos)
-    generar_informe_html(validos, invalidos, duplicados, contactos)
+    generar_informe_html(validos, invalidos, duplicados_contactos, contactos)
 
     print("💾 Guardados: validos.txt, invalidos.txt, duplicados.txt,")
     print("            leads_limpios.csv, leads_salesforce.csv e informe.html\n")
@@ -538,7 +540,7 @@ def main():
     for nombre, n in estadisticas_por_empresa(contactos):
         print(f"   - {nombre}: {n}")
 
-    generar_informe(validos, invalidos, duplicados)
+    generar_informe(validos, invalidos, duplicados_contactos)
 
 
 if __name__ == "__main__":
