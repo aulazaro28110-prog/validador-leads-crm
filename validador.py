@@ -18,6 +18,7 @@ Pensado para departamentos comerciales: convierte una lista de contactos
 
 import csv
 import sys
+import os
 import hashlib
 from html import escape
 
@@ -465,6 +466,11 @@ def generar_informe_html(validos, invalidos, duplicados, contactos,
 
 def main():
     print("🚀 Iniciando validador y enriquecedor de leads...\n")
+
+    if not os.path.exists("contactos.csv"):
+        print("❌ No encuentro 'contactos.csv' en esta carpeta. "
+              "Crea el archivo con las columnas: nombre,email,telefono,empresa")
+        return
 
     campos = ["nombre", "email", "telefono", "empresa"]
     contactos = []

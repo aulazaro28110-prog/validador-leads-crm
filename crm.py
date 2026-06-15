@@ -58,7 +58,11 @@ def cargar_db():
     if not os.path.exists(DB):
         return []
     with open(DB, "r", encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f))
+        # Normalizamos cada fila a las columnas esperadas: si el CSV se editó a
+        # mano y le falta una celda, el campo queda en "" en vez de provocar
+        # un KeyError más adelante.
+        return [{col: (fila.get(col) or "") for col in COLUMNAS}
+                for fila in csv.DictReader(f)]
 
 
 def guardar_db(leads):
@@ -73,7 +77,7 @@ def buscar(leads, email):
     """Devuelve el lead cuyo email coincide (normalizado), o None."""
     clave = normalizar_email(email)
     for lead in leads:
-        if normalizar_email(lead["email"]) == clave:
+        if normalizar_email(lead.get("email", "")) == clave:
             return lead
     return None
 
@@ -90,19 +94,20 @@ def comando_importar():
 
     # Set con los emails ya presentes: comprobar si un lead existe es O(1),
     # así importar miles de contactos es O(n) en vez de O(n²).
-    existentes = {normalizar_email(l["email"]) for l in leads}
+    existentes = {normalizar_email(l.get("email", "")) for l in leads}
 
     añadidos = 0
     for fila in nuevos_origen:
-        clave = normalizar_email(fila["email"])
+        # .get protege si el CSV viene de otra fuente y le falta alguna columna.
+        clave = normalizar_email(fila.get("email", ""))
         if clave in existentes:
             continue  # ya está en el CRM (o repetido en el origen), no lo duplicamos
         existentes.add(clave)
         leads.append({
-            "email": fila["email"],
-            "nombre": fila["nombre"],
-            "telefono": fila["telefono"],
-            "empresa": fila["empresa"],
+            "email": fila.get("email", ""),
+            "nombre": fila.get("nombre", ""),
+            "telefono": fila.get("telefono", ""),
+            "empresa": fila.get("empresa", ""),
             "estado": "nuevo",
             "alta": hoy_iso(),
             "ultimo_contacto": "",

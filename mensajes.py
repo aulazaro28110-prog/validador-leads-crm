@@ -56,13 +56,15 @@ def cargar_plantilla(ruta=PLANTILLA):
 
 def personalizar(texto, lead):
     """Sustituye los huecos {campo} por los datos reales del lead."""
-    nombre_pila, _ = separar_nombre(lead["nombre"])
+    # .get evita un KeyError si una fila del CRM viene con alguna columna de menos.
+    nombre = lead.get("nombre", "")
+    nombre_pila, _ = separar_nombre(nombre)
     reemplazos = {
-        "{nombre}": lead["nombre"],
-        "{nombre_pila}": nombre_pila or lead["nombre"],
-        "{empresa}": lead["empresa"],
-        "{email}": lead["email"],
-        "{telefono}": lead["telefono"],
+        "{nombre}": nombre,
+        "{nombre_pila}": nombre_pila or nombre,
+        "{empresa}": lead.get("empresa", ""),
+        "{email}": lead.get("email", ""),
+        "{telefono}": lead.get("telefono", ""),
     }
     for hueco, valor in reemplazos.items():
         texto = texto.replace(hueco, valor)
