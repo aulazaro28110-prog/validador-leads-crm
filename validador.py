@@ -257,6 +257,25 @@ def estadisticas_por_dominio(contactos, top=5):
 # 7) INFORMES Y EXPORTACIÓN
 # =============================================================================
 
+# Segundos que cuesta limpiar UNA fila a mano (revisar email, arreglar teléfono,
+# comprobar si está duplicada). Estimación conservadora; ajústala si quieres.
+SEGUNDOS_LIMPIEZA_MANUAL_POR_FILA = 8
+
+
+def minutos_ahorrados(total_filas):
+    """Estima el tiempo de limpieza manual evitado por procesar 'total_filas'.
+
+    Devuelve una tupla (minutos_totales, minutos_por_1000_filas):
+      - minutos_totales: lo ahorrado en ESTA ejecución.
+      - minutos_por_1000_filas: la tasa normalizada (la métrica del proyecto),
+        útil para comparar y para estimar cuánto se ahorra a otra escala.
+    """
+    segundos_totales = total_filas * SEGUNDOS_LIMPIEZA_MANUAL_POR_FILA
+    minutos_totales = round(segundos_totales / 60, 1)
+    minutos_por_1000 = round(SEGUNDOS_LIMPIEZA_MANUAL_POR_FILA * 1000 / 60, 1)
+    return (minutos_totales, minutos_por_1000)
+
+
 def generar_informe(validos, invalidos, duplicados):
     """Imprime en consola el resumen final con conteos y porcentaje."""
     print("\n" + "=" * 50)
@@ -281,6 +300,9 @@ def generar_informe(validos, invalidos, duplicados):
     else:
         porcentaje = 0
     print(f"🧹 % duplicados eliminados: {porcentaje}%")
+    min_total, min_por_1000 = minutos_ahorrados(total)
+    print(f"⏱️  Limpieza manual evitada: {min_total} min "
+          f"({min_por_1000} min por cada 1.000 filas)")
     print("=" * 50)
 
 

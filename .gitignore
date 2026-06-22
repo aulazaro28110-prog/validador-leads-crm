@@ -8,6 +8,12 @@ seguimiento.csv
 mensajes.csv
 # informe.html se versiona a propósito: sirve de muestra visual en GitHub
 
+# Salidas generadas por el Lead Scorer
+leads_priorizados.csv
+informe_leads.html
+leads_demo_grande.csv
+# leads_demo.csv y presentacion.html SÍ se versionan (ejemplo + showcase)
+
 # Configuración del entorno Claude Code
 .claude/
 

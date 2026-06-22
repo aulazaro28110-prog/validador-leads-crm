@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validador + Lead Scorer · Presentación del proyecto</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --line:#334155; --txt:#e2e8f0;
+          --muted:#94a3b8; --blue:#38bdf8; --hot:#f87171; --warm:#fbbf24;
+          --cold:#38bdf8; --green:#4ade80; }
+  * { box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--txt);
+         margin:0; padding:40px; line-height:1.55; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  h1 { color:var(--blue); font-size:34px; margin-bottom:4px; }
+  .sub { color:var(--muted); font-size:18px; margin-top:0; }
+  h2 { color:var(--txt); border-bottom:2px solid var(--line); padding-bottom:8px;
+       margin-top:48px; }
+  h3 { color:var(--blue); margin-bottom:6px; }
+  p { color:#cbd5e1; }
+  code { background:#0b1220; color:#7dd3fc; padding:2px 6px; border-radius:5px;
+         font-size:.92em; }
+  .cards { display:flex; gap:18px; flex-wrap:wrap; margin:26px 0; }
+  .card { background:var(--panel); border-radius:14px; padding:22px 26px; min-width:170px;
+          box-shadow:0 4px 14px rgba(0,0,0,.3); flex:1; }
+  .card .num { font-size:36px; font-weight:800; }
+  .card .lbl { color:var(--muted); font-size:14px; }
+  .hot{color:var(--hot)}.warm{color:var(--warm)}.cold{color:var(--cold)}.green{color:var(--green)}
+  table { width:100%; border-collapse:collapse; margin:16px 0 8px; background:var(--panel);
+          border-radius:10px; overflow:hidden; }
+  th,td { text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); }
+  th { color:var(--blue); font-size:14px; text-transform:uppercase; letter-spacing:.04em; }
+  tr:last-child td { border-bottom:none; }
+  /* Gráfica de barras CSS */
+  .chart { display:flex; align-items:flex-end; gap:26px; height:270px; padding:20px 10px 0;
+           background:var(--panel); border-radius:14px; margin:18px 0; }
+  .bar-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+             flex:1; height:100%; }
+  .bar { width:64%; border-radius:8px 8px 0 0; position:relative; transition:.3s; }
+  .bar .v { position:absolute; top:-24px; width:100%; text-align:center; font-weight:700;
+            font-size:15px; }
+  .bar-lbl { margin-top:10px; color:var(--muted); font-size:13px; text-align:center; }
+  .pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:13px;
+          font-weight:600; }
+  .badge { background:#0b1220; border:1px solid var(--line); border-radius:10px;
+           padding:14px 18px; display:inline-block; margin:6px 8px 6px 0; }
+  .flow { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin:18px 0; }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+          padding:14px 18px; flex:1; min-width:150px; }
+  .arrow { color:var(--blue); font-size:26px; }
+  footer { margin-top:50px; color:#64748b; font-size:13px; border-top:1px solid var(--line);
+           padding-top:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>📊 Validador + Lead Scorer de Leads Comerciales</h1>
+  <p class="sub">De una lista de contactos "sucia" a una agenda priorizada de a quién llamar hoy.</p>
+
+  <!-- ============================ EL PROBLEMA ============================ -->
+  <h2>🎯 Qué problema resuelve</h2>
+  <p>Un equipo comercial recibe miles de contactos de calidad desigual: emails mal escritos,
+  teléfonos con formatos imposibles, duplicados disfrazados y leads sin ningún valor mezclados
+  con oportunidades de oro. Revisar y priorizar eso <b>a mano</b> cuesta días y se cometen errores.</p>
+  <p>Este proyecto lo automatiza en <b>dos fases encadenadas</b>:</p>
+
+  <div class="flow">
+    <div class="step"><h3>1 · Validador</h3>Limpia, corrige erratas, valida email/teléfono/nombre
+      con <b>regex</b> y elimina duplicados "sucios".</div>
+    <div class="arrow">➜</div>
+    <div class="step"><h3>2 · Lead Scorer</h3>Puntúa cada lead por <b>potencial de venta</b>
+      (cargo + sector/tamaño + actividad) y lo clasifica en 🔥/🌡️/❄️.</div>
+    <div class="arrow">➜</div>
+    <div class="step"><h3>3 · Resultado</h3>CSV priorizado + panel HTML: <b>a quién llamar
+      primero</b> y por qué.</div>
+  </div>
+
+  <!-- ============================ MÉTRICAS ============================ -->
+  <h2>📈 Métricas (sobre una base real de 1.000 leads)</h2>
+  <div class="cards">
+    <div class="card"><div class="num">1.000</div><div class="lbl">leads procesados</div></div>
+    <div class="card"><div class="num hot">319</div><div class="lbl">🔥 calientes (priorizados)</div></div>
+    <div class="card"><div class="num green">99,7%</div><div class="lbl">contactables verificados</div></div>
+    <div class="card"><div class="num">59</div><div class="lbl">nota media (0-100)</div></div>
+    <div class="card"><div class="num warm">~133 min</div><div class="lbl">limpieza manual evitada / 1.000 filas</div></div>
+  </div>
+
+  <!-- ============================ GRÁFICA TEMPERATURA ============================ -->
+  <h2>🌡️ Distribución por temperatura</h2>
+  <p>Cómo se reparten los 1.000 leads según su potencial de venta:</p>
+  <div class="chart">
+    <div class="bar-col"><div class="bar" style="height:146px; background:var(--hot)">
+        <span class="v hot">319</span></div><div class="bar-lbl">🔥 Caliente<br>(70-100)</div></div>
+    <div class="bar-col"><div class="bar" style="height:220px; background:var(--warm)">
+        <span class="v warm">480</span></div><div class="bar-lbl">🌡️ Templado<br>(40-69)</div></div>
+    <div class="bar-col"><div class="bar" style="height:92px; background:var(--cold)">
+        <span class="v cold">201</span></div><div class="bar-lbl">❄️ Frío<br>(0-39)</div></div>
+  </div>
+
+  <!-- ============================ HISTOGRAMA SCORE ============================ -->
+  <h2>📊 Histograma de puntuaciones</h2>
+  <p>Número de leads en cada tramo de nota (de 0 a 100):</p>
+  <div class="chart">
+    <div class="bar-col"><div class="bar" style="height:10px; background:#475569">
+        <span class="v">15</span></div><div class="bar-lbl">0-19</div></div>
+    <div class="bar-col"><div class="bar" style="height:119px; background:#0ea5e9">
+        <span class="v">186</span></div><div class="bar-lbl">20-39</div></div>
+    <div class="bar-col"><div class="bar" style="height:200px; background:#0ea5e9">
+        <span class="v">312</span></div><div class="bar-lbl">40-59</div></div>
+    <div class="bar-col"><div class="bar" style="height:197px; background:#22c55e">
+        <span class="v">308</span></div><div class="bar-lbl">60-79</div></div>
+    <div class="bar-col"><div class="bar" style="height:115px; background:#22c55e">
+        <span class="v">179</span></div><div class="bar-lbl">80-100</div></div>
+  </div>
+
+  <!-- ============================ SISTEMA DE PUNTUACIÓN ============================ -->
+  <h2>🧮 Cómo se puntúa un lead (0-100)</h2>
+  <table>
+    <tr><th>Señal</th><th>Qué mide</th><th>Puntos</th><th>Cómo se calcula</th></tr>
+    <tr><td>👔 <b>Cargo</b></td><td>¿Decide la compra?</td><td>0-30</td>
+        <td>Regex por niveles: decisor (CEO/Director/Head…) 30 · mando intermedio 18 · ejecutor 8</td></tr>
+    <tr><td>🏢 <b>Sector + Tamaño</b></td><td>¿Encaja con el cliente ideal?</td><td>0-30</td>
+        <td>Sector objetivo +15 · tamaño ideal (50-500 empleados) +15</td></tr>
+    <tr><td>🎬 <b>Actividad</b></td><td>¿Ha mostrado interés?</td><td>0-40</td>
+        <td>Demo/formulario 40 · descarga 30 · visita web 20 · abrió email 10</td></tr>
+  </table>
+  <p style="margin-top:14px">
+    <span class="pill" style="background:var(--hot);color:#1a0000">🔥 Caliente 70-100</span>
+    <span class="pill" style="background:var(--warm);color:#1a1500">🌡️ Templado 40-69</span>
+    <span class="pill" style="background:var(--cold);color:#001a1f">❄️ Frío 0-39</span>
+  </p>
+
+  <!-- ============================ FUNCIONES ============================ -->
+  <h2>⚙️ Funciones principales</h2>
+  <h3>validador.py — limpieza y validación</h3>
+  <table>
+    <tr><th>Función</th><th>Qué hace</th></tr>
+    <tr><td><code>validar_email()</code></td><td>Valida el formato del email con regex (una @, dominio con punto, sin puntos dobles)</td></tr>
+    <tr><td><code>validar_telefono()</code></td><td>Normaliza y valida (9-15 dígitos), aceptando +34, espacios y guiones</td></tr>
+    <tr><td><code>validar_nombre()</code></td><td>Exige nombre+apellido; acepta tildes, ñ y letras de otros idiomas (è, ü, ç…)</td></tr>
+    <tr><td><code>detectar_duplicados()</code></td><td>Encuentra duplicados "sucios" (mayúsculas, +34, erratas de dominio)</td></tr>
+    <tr><td><code>corregir_dominio_email()</code></td><td>Arregla erratas típicas (gmail.con → gmail.com)</td></tr>
+    <tr><td><code>minutos_ahorrados()</code></td><td>Estima el tiempo de limpieza manual evitado</td></tr>
+  </table>
+  <h3>lead_scorer.py — priorización por potencial de venta</h3>
+  <table>
+    <tr><th>Función</th><th>Qué hace</th></tr>
+    <tr><td><code>puntuar_cargo()</code></td><td>0-30 según la autoridad del cargo (regex por niveles)</td></tr>
+    <tr><td><code>puntuar_sector_tamano()</code></td><td>0-30 según encaje con el cliente ideal (sector + nº empleados)</td></tr>
+    <tr><td><code>puntuar_actividad()</code></td><td>0-40 según la señal de interés más fuerte</td></tr>
+    <tr><td><code>lead_score()</code></td><td>Suma las tres señales en una nota 0-100</td></tr>
+    <tr><td><code>clasificar_temperatura()</code></td><td>Traduce la nota a 🔥 Caliente / 🌡️ Templado / ❄️ Frío</td></tr>
+    <tr><td><code>es_contactable()</code></td><td>Reutiliza el validador para avisar si el lead no es localizable</td></tr>
+    <tr><td><code>motivo_lead()</code></td><td>Explica en lenguaje comercial por qué el lead tiene esa nota</td></tr>
+    <tr><td><code>generar_informe_html()</code></td><td>Crea el panel visual con la agenda priorizada</td></tr>
+  </table>
+
+  <!-- ============================ CAPACIDADES ============================ -->
+  <h2>🛡️ Capacidades y robustez</h2>
+  <div>
+    <span class="badge">✅ <b>42 tests</b> automáticos (pytest), todos en verde</span>
+    <span class="badge">🔤 Validación con <b>expresiones regulares</b></span>
+    <span class="badge">🌍 Nombres europeos (è, ü, ç, ø, ñ)</span>
+    <span class="badge">🧹 Detección de duplicados "sucios"</span>
+    <span class="badge">📞 Verificación de contactabilidad</span>
+    <span class="badge">🧩 Tolera datos sucios (rangos, "100+", "1.500")</span>
+    <span class="badge">⚙️ Umbrales configurables sin tocar código</span>
+    <span class="badge">📦 <b>Cero librerías de pago</b> (solo Python estándar)</span>
+  </div>
+
+  <footer>
+    Proyecto desarrollado por Álvaro · Python estándar (csv, re, hashlib) · pytest para tests.<br>
+    Métricas calculadas sobre una base sintética de 1.000 leads representativa de datos reales.
+  </footer>
+
+</div>
+</body>
+</html>
