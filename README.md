@@ -4,6 +4,10 @@
 > ventas organizada: la **limpia**, **prioriza los mejores leads**, los **reparte entre el
 > equipo** y hace **seguimiento** — en segundos y sin librerías externas (solo Python estándar).
 
+### 🔗 [**Ver la presentación interactiva (demo online)**](https://aulazaro28110-prog.github.io/validador-leads-crm/presentacion.html)
+
+*Panel visual con métricas reales, gráficas y tablas — se abre en el navegador.*
+
 ---
 
 ## 🧭 El proyecto de un vistazo
