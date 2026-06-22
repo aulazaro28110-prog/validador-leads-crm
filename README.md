@@ -65,7 +65,9 @@ gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que para verlo
 ✅ Contactos válidos:     1004
 ❌ Contactos inválidos:   6
 🔁 Contactos duplicados:  3
-🧹 % duplicados eliminados: 0%
+📇 Total procesados:      1013
+🧹 % duplicados eliminados: 0.3%
+⏱️  Limpieza manual evitada: 135.1 min (133.3 min por cada 1.000 filas)
 ==================================================
 ```
 
@@ -247,6 +249,28 @@ python reparto.py balance                  # 🔴 VIERNES: balance de lo que tra
 
 ---
 
+## 🧪 Calidad: 57 tests automáticos
+
+El proyecto incluye una **batería de pruebas con pytest** que actúa como red de seguridad:
+cubre los validadores (incluidos casos límite y nombres europeos), el Lead Scorer y el
+reparto en equipo. Todos los cambios se hacen con los tests en verde.
+
+```bash
+pip install -r requirements-dev.txt      # solo pytest (el proyecto no necesita más)
+python -m pytest -v                      # 57 passed
+```
+
+| Suite | Qué valida |
+|-------|------------|
+| `test_validador.py` | Validación de email/teléfono/nombre y duplicados |
+| `test_dificil.py` | Casos límite reales (puntos dobles, nombres con `è`/`ü`/`ç`, duplicados disfrazados) |
+| `test_lead_scorer.py` | Puntuación por cargo/sector/actividad, temperatura y contactabilidad |
+| `test_reparto.py` | Equilibrio por temperatura, capacidad y balance semanal |
+
+> Ejecución (Windows): `python -m pytest -v`. Tiempo total: ~0,2 s.
+
+---
+
 ## 🛣️ Roadmap (evolución a proceso productivo)
 
 - [ ] **Origen automático de datos** (formulario web / API en vez de CSV manual).
@@ -286,9 +310,24 @@ con tus datos (`nombre,email,telefono,empresa`) y ejecuta.
 ## 👤 Autor
 
 **Álvaro Utazu Lázaro** · En formación como AI Engineer
-Proyecto desarrollado con [Claude Code](https://claude.ai) (Anthropic) como parte del
-programa de aprendizaje práctico de IA.
+
+- 📧 Email: aulazaro.28110@gmail.com
+- 💼 LinkedIn: _(pendiente de añadir)_
+
+Proyecto desarrollado con metodología asistida por IA ([Claude Code](https://claude.ai),
+Anthropic) como parte de un programa de aprendizaje práctico de ingeniería de software e IA.
 
 ---
 
-*De una lista de contactos sucia a una base de leads priorizada y lista para vender.*
+## 📄 Licencia
+
+Código **visible pero no libre** (*source-available*). Puedes ver, leer y ejecutar este
+proyecto para **evaluarlo**, pero queda prohibido copiarlo, modificarlo, redistribuirlo o
+reutilizarlo sin permiso escrito del autor. Consulta el archivo [LICENSE](LICENSE).
+
+© 2026 Álvaro Utazu Lázaro. Todos los derechos reservados.
+
+---
+
+*De una lista de contactos sucia a una operación de ventas organizada: limpiar, priorizar,
+repartir y hacer seguimiento.*
