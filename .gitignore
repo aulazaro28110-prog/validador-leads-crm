@@ -17,6 +17,7 @@ leads_demo_grande.csv
 # Salidas generadas por el reparto en equipo
 reparto_equipo.csv
 informe_equipo.html
+informe_balance.html
 leads_*.csv
 !leads_demo.csv
 
