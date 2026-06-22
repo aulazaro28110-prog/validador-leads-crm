@@ -312,7 +312,7 @@ con tus datos (`nombre,email,telefono,empresa`) y ejecuta.
 **Álvaro Utazu Lázaro** · En formación como AI Engineer
 
 - 📧 Email: aulazaro.28110@gmail.com
-- 💼 LinkedIn: _(pendiente de añadir)_
+- 💼 LinkedIn: [alvaro-utazu-lázaro](https://www.linkedin.com/in/alvaro-utazu-lázaro-952255291)
 
 Proyecto desarrollado con metodología asistida por IA ([Claude Code](https://claude.ai),
 Anthropic) como parte de un programa de aprendizaje práctico de ingeniería de software e IA.
