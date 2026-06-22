@@ -14,6 +14,12 @@ informe_leads.html
 leads_demo_grande.csv
 # leads_demo.csv y presentacion.html SÍ se versionan (ejemplo + showcase)
 
+# Salidas generadas por el reparto en equipo
+reparto_equipo.csv
+informe_equipo.html
+leads_*.csv
+!leads_demo.csv
+
 # Configuración del entorno Claude Code
 .claude/
 
