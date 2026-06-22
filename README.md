@@ -4,7 +4,7 @@
 > ventas organizada: la **limpia**, **prioriza los mejores leads**, los **reparte entre el
 > equipo** y hace **seguimiento** — en segundos y sin librerías externas (solo Python estándar).
 
-### 🔗 [**Ver la presentación interactiva (demo online)**](https://aulazaro28110-prog.github.io/validador-leads-crm/presentacion.html)
+### 🔗 [**Ver la presentación interactiva (demo online)**](https://aulazaro28110-prog.github.io/validador-leads-crm/)
 
 *Panel visual con métricas reales, gráficas y tablas — se abre en el navegador.*
 
@@ -31,10 +31,9 @@ validador.py  →  lead_scorer.py  →  reparto.py             →  crm.py
 
 ### 🖼️ Presentación visual
 
-[`docs/presentacion.html`](docs/presentacion.html) es un panel con métricas reales (1.000
-leads), gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que para verlo:
-- **Descárgalo** y ábrelo en tu navegador (doble clic), **o**
-- publícalo como web con **GitHub Pages** (*Settings → Pages → Branch `main` → carpeta `/docs`*).
+Publicado con **GitHub Pages** en
+**https://aulazaro28110-prog.github.io/validador-leads-crm/** — un panel con métricas reales
+(1.000 leads), gráficas y tablas. El código fuente está en [`docs/index.html`](docs/index.html).
 
 ### 📁 Estructura del proyecto
 
@@ -42,7 +41,7 @@ leads), gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que pa
 .
 ├── validador.py · lead_scorer.py · reparto.py · crm.py · mensajes.py   ← código
 ├── tests/        test_*.py                                            ← 57 pruebas (pytest)
-├── docs/         presentacion.html · RESUMEN.md                       ← documentación
+├── docs/         index.html (web) · RESUMEN.md                        ← documentación / GitHub Pages
 ├── contactos.csv · leads_demo.csv · equipo.csv · plantilla.txt        ← datos de ejemplo
 └── README.md · LICENSE · requirements-dev.txt
 ```
