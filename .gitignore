@@ -6,7 +6,8 @@ leads_limpios.csv
 leads_salesforce.csv
 seguimiento.csv
 mensajes.csv
-# informe.html se versiona a propósito: sirve de muestra visual en GitHub
+# panel generado por validador.py (el showcase es docs/presentacion.html)
+informe.html
 
 # Salidas generadas por el Lead Scorer
 leads_priorizados.csv

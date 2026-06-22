@@ -4,7 +4,7 @@
 > **De días de trabajo manual a segundos.** Convierte una lista de contactos "sucia"
 > en una operación de ventas organizada para todo un equipo.
 
-*(Documento breve. La explicación completa está en el [README](README.md).)*
+*(Documento breve. La explicación completa está en el [README](../README.md).)*
 
 ---
 
@@ -52,4 +52,4 @@ python reparto.py              # reparte (lunes) · "balance" para el viernes
 ```
 
 ---
-© 2026 Álvaro Utazu Lázaro · Código *source-available* (ver [LICENSE](LICENSE))
+© 2026 Álvaro Utazu Lázaro · Código *source-available* (ver [LICENSE](../LICENSE))

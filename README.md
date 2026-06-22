@@ -27,20 +27,21 @@ validador.py  →  lead_scorer.py  →  reparto.py             →  crm.py
 
 ### 🖼️ Presentación visual
 
-[`presentacion.html`](presentacion.html) es un panel con métricas reales (1.000 leads),
-gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que para verlo:
+[`docs/presentacion.html`](docs/presentacion.html) es un panel con métricas reales (1.000
+leads), gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que para verlo:
 - **Descárgalo** y ábrelo en tu navegador (doble clic), **o**
-- publícalo como web con **GitHub Pages** (*Settings → Pages → Branch `main` → carpeta `/root`*).
+- publícalo como web con **GitHub Pages** (*Settings → Pages → Branch `main` → carpeta `/docs`*).
 
 ### 📁 Estructura del proyecto
 
-| Archivo(s) | Rol |
-|------------|-----|
-| `validador.py` · `lead_scorer.py` · `reparto.py` · `crm.py` · `mensajes.py` | Módulos del pipeline |
-| `test_*.py` | Pruebas automáticas (pytest) |
-| `presentacion.html` | Presentación visual del proyecto |
-| `contactos.csv` · `leads_demo.csv` · `equipo.csv` | Datos de ejemplo |
-| `README.md` · `RESUMEN.md` | Documentación |
+```
+.
+├── validador.py · lead_scorer.py · reparto.py · crm.py · mensajes.py   ← código
+├── tests/        test_*.py                                            ← 57 pruebas (pytest)
+├── docs/         presentacion.html · RESUMEN.md                       ← documentación
+├── contactos.csv · leads_demo.csv · equipo.csv · plantilla.txt        ← datos de ejemplo
+└── README.md · LICENSE · requirements-dev.txt
+```
 
 ---
 
