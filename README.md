@@ -1,8 +1,46 @@
-# 🎯 Validador y Enriquecedor de Leads Comerciales
+# 🎯 Sistema Comercial de Leads (Validador · Lead Scorer · Reparto · CRM)
 
-> Script Python que convierte una lista de contactos **"sucia"** en una base de datos
-> **limpia, puntuada y lista para importar a Salesforce** — en segundos y sin librerías
-> externas (solo Python estándar).
+> Sistema en Python que convierte una lista de contactos **"sucia"** en una operación de
+> ventas organizada: la **limpia**, **prioriza los mejores leads**, los **reparte entre el
+> equipo** y hace **seguimiento** — en segundos y sin librerías externas (solo Python estándar).
+
+---
+
+## 🧭 El proyecto de un vistazo
+
+Lo que empezó como un validador es hoy un **sistema comercial completo de 4 fases** que
+organiza el trabajo de un equipo de ventas durante toda la semana:
+
+```
+validador.py  →  lead_scorer.py  →  reparto.py             →  crm.py
+  (limpia)        (prioriza)        (reparte + balance)        (seguimiento)
+```
+
+| Fase | Módulo | Qué hace |
+|------|--------|----------|
+| 1. Limpieza | `validador.py` | Valida con **regex**, corrige erratas y elimina duplicados "sucios" |
+| 2. Priorización | `lead_scorer.py` | Puntúa cada lead por potencial de venta → 🔥 Caliente / 🌡️ Templado / ❄️ Frío |
+| 3. Reparto (equipo) | `reparto.py` | 🟢 **Lunes** reparte los leads entre comerciales; 🔴 **viernes** balancea qué trabajó cada uno |
+| 4. Seguimiento | `crm.py` | Agenda diaria de contactos y estados |
+
+✅ **57 pruebas automáticas (pytest)** cubren los validadores, el scorer y el reparto.
+
+### 🖼️ Presentación visual
+
+[`presentacion.html`](presentacion.html) es un panel con métricas reales (1.000 leads),
+gráficas y tablas. ⚠️ **GitHub no renderiza los HTML**, así que para verlo:
+- **Descárgalo** y ábrelo en tu navegador (doble clic), **o**
+- publícalo como web con **GitHub Pages** (*Settings → Pages → Branch `main` → carpeta `/root`*).
+
+### 📁 Estructura del proyecto
+
+| Archivo(s) | Rol |
+|------------|-----|
+| `validador.py` · `lead_scorer.py` · `reparto.py` · `crm.py` · `mensajes.py` | Módulos del pipeline |
+| `test_*.py` | Pruebas automáticas (pytest) |
+| `presentacion.html` | Presentación visual del proyecto |
+| `contactos.csv` · `leads_demo.csv` · `equipo.csv` | Datos de ejemplo |
+| `README.md` · `RESUMEN.md` | Documentación |
 
 ---
 
@@ -170,6 +208,42 @@ Ejemplo de `python crm.py hoy`:
    [ ] Luis Martínez         | Innova SL        | seguimiento (atrasado 2d)
        luis.martinez@gmail.com · +34 698 76 54 32
 ```
+
+---
+
+## 🌡️ Lead Scorer (`lead_scorer.py`) — prioriza por potencial de venta
+
+Mientras el validador mide si el **dato** está limpio, el Lead Scorer mide cuánto
+**promete** un lead como cliente y lo clasifica en una temperatura comercial.
+
+| Señal | Qué mide | Puntos |
+|-------|----------|:------:|
+| 👔 Cargo | ¿Decide la compra? (CEO/Director… vs becario) | 0-30 |
+| 🏢 Sector + Tamaño | ¿Encaja con el cliente ideal? | 0-30 |
+| 🎬 Actividad | ¿Ha mostrado interés? (demo > descarga > visita > email) | 0-40 |
+
+**Temperatura:** 🔥 Caliente (70-100) · 🌡️ Templado (40-69) · ❄️ Frío (0-39).
+Además **reutiliza el validador** para avisar si un lead caliente **no es contactable**.
+
+```bash
+python lead_scorer.py leads_limpios.csv   # genera leads_priorizados.csv + informe_leads.html
+```
+
+---
+
+## 🗓️ Reparto en equipo (`reparto.py`) — el ritmo semanal
+
+Organiza a un equipo de ventas durante la semana, en dos modos:
+
+```bash
+python reparto.py                          # 🟢 LUNES: reparte los leads entre el equipo
+python reparto.py balance                  # 🔴 VIERNES: balance de lo que trabajó cada uno
+```
+
+- **Lunes:** reparte equilibrando **temperatura** (nadie acapara los calientes) y **carga**
+  (según la capacidad de cada comercial, definida en `equipo.csv`). Genera la lista de cada uno.
+- **Viernes:** cruza el reparto con el CRM y muestra por comercial cuántos leads **trabajó**,
+  cuántos **cerró** y —lo más importante— cuántos **🔥 calientes quedaron sin tocar**.
 
 ---
 
