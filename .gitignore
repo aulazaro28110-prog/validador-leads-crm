@@ -14,3 +14,7 @@ mensajes.csv
 # Caché de Python
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Prompts / notas de trabajo (uso personal, no van al repo público)
+PROMPT_*.md

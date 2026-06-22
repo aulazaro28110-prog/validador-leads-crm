@@ -19,6 +19,7 @@ Pensado para departamentos comerciales: convierte una lista de contactos
 import csv
 import sys
 import os
+import re
 import hashlib
 from html import escape
 
@@ -62,31 +63,30 @@ def clave_contacto(contacto):
 # 2) VALIDACIÓN
 # =============================================================================
 
+# Patrón de un email válido: usuario@dominio.ext.
+#   usuario  -> [^@\s.]+(?:\.[^@\s.]+)*  : trozos sin puntos, unidos por UN punto
+#               (prohíbe ana..perez, .ana o ana.)
+#   dominio  -> (?:[^@\s.]+\.)+           : uno o más "etiqueta." (sub.dominio.)
+#   tld      -> [^@\s.]{2,}               : extensión final de 2+ caracteres
+# Así caen los puntos dobles (gmail..com) y los dominios sin punto.
+PATRON_EMAIL = re.compile(
+    r"^[^@\s.]+(?:\.[^@\s.]+)*@(?:[^@\s.]+\.)+[^@\s.]{2,}$"
+)
+
+
 def validar_email(email):
     """True si el email tiene formato válido (una @, dominio con punto, TLD>=2)."""
-    email = email.strip()
-    if " " in email:
-        return False
-    partes = email.split("@")
-    if len(partes) != 2:
-        return False
-    usuario, dominio = partes
-    if usuario == "" or dominio == "":
-        return False
-    if "." not in dominio:
-        return False
-    if dominio.startswith(".") or dominio.endswith("."):
-        return False
-    extension = dominio.split(".")[-1]
-    if len(extension) < 2:
-        return False
-    return True
+    return PATRON_EMAIL.match(email.strip()) is not None
+
+
+# Patrón de un teléfono ya normalizado: solo dígitos, longitud de 9 a 15.
+PATRON_TELEFONO = re.compile(r"^\d{9,15}$")
 
 
 def validar_telefono(telefono):
     """True si, una vez normalizado, son solo dígitos y mide entre 9 y 15."""
     t = normalizar_telefono(telefono)
-    return t.isdigit() and 9 <= len(t) <= 15
+    return PATRON_TELEFONO.match(t) is not None
 
 
 def validar_empresa(empresa):
@@ -94,12 +94,23 @@ def validar_empresa(empresa):
     return empresa.strip() != ""
 
 
+# Una palabra de un nombre: letras (de cualquier idioma), pudiendo unir bloques con
+# guion o apóstrofo (José-María, O'Connor, Lefèvre, Müller, Gonçalves).
+#   [^\W\d_] = "carácter de palabra que NO sea dígito ni guion bajo" = cualquier
+#   LETRA Unicode (incluye á, è, ñ, ü, ö, ç...). Más robusto que listar tildes a mano.
+PATRON_PALABRA_NOMBRE = re.compile(r"^[^\W\d_]+(?:[-'][^\W\d_]+)*$")
+
+
 def validar_nombre(nombre):
-    """True si hay al menos nombre y apellido y todo son letras."""
+    """True si hay al menos nombre y apellido, formados por letras.
+
+    Se permiten guiones y apóstrofos dentro de una palabra para aceptar nombres
+    como 'José-María' u 'O'Connor'.
+    """
     partes = nombre.strip().split()
     if len(partes) < 2:
         return False
-    return all(parte.isalpha() for parte in partes)
+    return all(PATRON_PALABRA_NOMBRE.match(parte) for parte in partes)
 
 
 # =============================================================================
