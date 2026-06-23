@@ -18,8 +18,9 @@ validador.py  →  lead_scorer.py  →  reparto.py            →  crm.py
 
 1. **Validador** — valida email/teléfono/nombre con **regex**, corrige erratas y
    detecta duplicados "sucios" (mayúsculas, espacios, `+34`, `gmail.con`).
-2. **Lead Scorer** — puntúa cada lead 0-100 por **potencial de venta** (cargo +
-   sector/tamaño + actividad) y lo clasifica en 🔥 Caliente / 🌡️ Templado / ❄️ Frío.
+2. **Lead Scorer** — puntúa cada lead 0-100 por **potencial de venta** = perfil (cargo +
+   sector/tamaño + actividad) + **urgencia** (etapa del embudo + plazo de cierre), y lo
+   clasifica en 🔥/🌡️/❄️. **Orientaciones configurables** (equilibrado/cierre/captación).
 3. **Reparto** — reparte los leads entre los comerciales equilibrando temperatura y
    carga (🟢 lunes) y hace el **balance** de lo trabajado (🔴 viernes).
 4. **CRM** — agenda diaria de contactos y estados (nuevo → seguimiento → cerrado).

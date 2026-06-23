@@ -21,6 +21,10 @@ informe_equipo.html
 informe_balance.html
 leads_*.csv
 !leads_demo.csv
+# Equipos de prueba (el ejemplo versionado es equipo.csv)
+equipo_test.csv
+equipo_*.csv
+!equipo.csv
 
 # Configuración del entorno Claude Code
 .claude/

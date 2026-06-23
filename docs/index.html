@@ -116,20 +116,27 @@
 
   <!-- ============================ SISTEMA DE PUNTUACIÓN ============================ -->
   <h2>🧮 Cómo se puntúa un lead (0-100)</h2>
+  <p>La nota combina el <b>PERFIL</b> del lead con la <b>URGENCIA</b> de la oportunidad abierta.</p>
   <table>
-    <tr><th>Señal</th><th>Qué mide</th><th>Puntos</th><th>Cómo se calcula</th></tr>
-    <tr><td>👔 <b>Cargo</b></td><td>¿Decide la compra?</td><td>0-30</td>
-        <td>Regex por niveles: decisor (CEO/Director/Head…) 30 · mando intermedio 18 · ejecutor 8</td></tr>
-    <tr><td>🏢 <b>Sector + Tamaño</b></td><td>¿Encaja con el cliente ideal?</td><td>0-30</td>
-        <td>Sector objetivo +15 · tamaño ideal (50-500 empleados) +15</td></tr>
-    <tr><td>🎬 <b>Actividad</b></td><td>¿Ha mostrado interés?</td><td>0-40</td>
-        <td>Demo/formulario 40 · descarga 30 · visita web 20 · abrió email 10</td></tr>
+    <tr><th>Bloque</th><th>Señal</th><th>Cómo se calcula</th></tr>
+    <tr><td>Perfil</td><td>👔 <b>Cargo</b></td>
+        <td>Regex por niveles: decisor (CEO/Director/Head…) · mando intermedio · ejecutor</td></tr>
+    <tr><td>Perfil</td><td>🏢 <b>Sector + Tamaño</b></td>
+        <td>Sector objetivo + tamaño ideal (50-500 empleados)</td></tr>
+    <tr><td>Perfil</td><td>🎬 <b>Actividad</b></td>
+        <td>Demo/formulario > descarga > visita web > abrió email</td></tr>
+    <tr><td>Urgencia</td><td>🎯 <b>Etapa del embudo</b></td>
+        <td>Cierre > Negociación > Propuesta > Cualificación > Prospección</td></tr>
+    <tr><td>Urgencia</td><td>⏰ <b>Plazo de cierre</b></td>
+        <td>Días hasta la fecha: cuanto más cerca, más urgente</td></tr>
   </table>
   <p style="margin-top:14px">
     <span class="pill" style="background:var(--hot);color:#1a0000">🔥 Caliente 70-100</span>
     <span class="pill" style="background:var(--warm);color:#1a1500">🌡️ Templado 40-69</span>
     <span class="pill" style="background:var(--cold);color:#001a1f">❄️ Frío 0-39</span>
   </p>
+  <p style="margin-top:10px"><b>Orientaciones configurables:</b> el peso perfil/urgencia se ajusta por
+    empresa — <code>equilibrado</code> (70/30), <code>cierre</code> (60/40), <code>captacion</code> (80/20).</p>
 
   <!-- ============================ FUNCIONES ============================ -->
   <h2>⚙️ Funciones principales</h2>

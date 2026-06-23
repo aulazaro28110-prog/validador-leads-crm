@@ -24,6 +24,7 @@ import os
 import re
 import sys
 import unicodedata
+from datetime import date
 from html import escape
 
 # Reutilizamos el "núcleo" validador.py para saber si el lead es localizable.
@@ -48,6 +49,59 @@ UMBRAL_TEMPLADO = 40   # 40-69  -> nutrir / segunda fila  ( <40 -> Frío )
 TAMANO_IDEAL_MIN = 50
 TAMANO_IDEAL_MAX = 500
 TAMANO_ACEPTABLE_MAX = 2000  # por encima de esto, demasiado grande
+
+# --- ORIENTACIONES COMERCIALES (presets ajustables por empresa) ---
+# Cada empresa prioriza distinto. La nota final = peso_perfil% PERFIL (cargo+sector
+# +actividad) + resto% URGENCIA (etapa del embudo + plazo de cierre). Elige la
+# orientación con: python lead_scorer.py leads.csv --orientacion <nombre>
+#   - equilibrado : el perfil manda (70%), la urgencia matiza. Uso general.
+#   - cierre      : orientado a firmar ya (urgencia 40%, etapas/plazos estrictos).
+#   - captacion   : foco en el cliente ideal (perfil 80%); la urgencia casi no cuenta.
+PERFIL_MAX = 100  # cargo(30) + sector/tamaño(30) + actividad(40)
+
+ORIENTACIONES = {
+    "equilibrado": {
+        "peso_perfil": 0.70,
+        "etapa": {"cierre": 18, "negociacion": 14, "propuesta": 10,
+                  "cualificacion": 5, "prospeccion": 2},
+        "etapa_desconocida": 3,
+        "plazo": [(7, 12), (15, 9), (30, 6), (90, 3)],
+    },
+    "cierre": {
+        "peso_perfil": 0.60,
+        "etapa": {"cierre": 18, "negociacion": 13, "propuesta": 7,
+                  "cualificacion": 3, "prospeccion": 1},
+        "etapa_desconocida": 2,
+        "plazo": [(7, 12), (15, 8), (30, 3), (60, 1)],
+    },
+    "captacion": {
+        "peso_perfil": 0.80,
+        "etapa": {"cierre": 16, "negociacion": 13, "propuesta": 10,
+                  "cualificacion": 7, "prospeccion": 4},
+        "etapa_desconocida": 5,
+        "plazo": [(14, 12), (30, 9), (60, 5), (120, 2)],
+    },
+}
+ORIENTACION_POR_DEFECTO = "equilibrado"
+
+# CONFIG = la orientación ACTIVA. Las funciones de puntuación leen de aquí.
+CONFIG = {}
+
+
+def usar_orientacion(nombre):
+    """Activa una orientación comercial (cambia pesos, etapas y tramos de plazo)."""
+    if nombre not in ORIENTACIONES:
+        raise ValueError(
+            f"Orientación '{nombre}' desconocida. Opciones: {', '.join(ORIENTACIONES)}"
+        )
+    CONFIG.clear()
+    CONFIG.update(ORIENTACIONES[nombre])
+    CONFIG["nombre"] = nombre
+    # Tope de urgencia "en bruto" (mejor etapa + mejor plazo) para reescalar al peso.
+    CONFIG["urgencia_max"] = max(CONFIG["etapa"].values()) + CONFIG["plazo"][0][1]
+
+
+usar_orientacion(ORIENTACION_POR_DEFECTO)
 
 
 # =============================================================================
@@ -214,16 +268,91 @@ def puntuar_actividad(actividad):
 
 
 # =============================================================================
+# 3bis) SEÑAL: URGENCIA (0-30) — etapa del embudo + plazo de cierre
+# =============================================================================
+
+def puntuar_etapa(proceso):
+    """0-18 según la etapa del embudo (cuanto más cerca del cierre, más urgente).
+
+    Los puntos dependen de la orientación activa (ver ORIENTACIONES / CONFIG).
+    """
+    etapa = CONFIG["etapa"]
+    p = normalizar_texto(proceso)
+    if p == "":
+        return 0
+    if "cierre" in p:
+        return etapa["cierre"]
+    if "negociaci" in p:
+        return etapa["negociacion"]
+    if "propuesta" in p:
+        return etapa["propuesta"]
+    if "cualific" in p:
+        return etapa["cualificacion"]
+    if "prospec" in p:
+        return etapa["prospeccion"]
+    return CONFIG["etapa_desconocida"]
+
+
+def _parse_fecha(texto):
+    """Convierte una fecha a date. Acepta ISO (2026-07-10) y dd/mm/aaaa. None si falla."""
+    s = (texto or "").strip()
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        pass
+    m = re.match(r"^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$", s)
+    if m:
+        d, mth, y = (int(x) for x in m.groups())
+        try:
+            return date(y, mth, d)
+        except ValueError:
+            return None
+    return None
+
+
+def puntuar_plazo(fecha_cierre, hoy=None):
+    """0-12 según los días que faltan para el cierre (más cerca = más urgente).
+
+    Sin fecha o fecha ilegible -> 0. Una fecha ya vencida cuenta como inminente.
+    """
+    fecha = _parse_fecha(fecha_cierre)
+    if fecha is None:
+        return 0
+    dias = (fecha - (hoy or date.today())).days
+    for dias_max, puntos in CONFIG["plazo"]:
+        if dias <= dias_max:
+            return puntos
+    return 0
+
+
+def puntuar_urgencia(lead):
+    """0-30: suma de la etapa del embudo (0-18) y el plazo de cierre (0-12)."""
+    return (puntuar_etapa(lead.get("proceso", ""))
+            + puntuar_plazo(lead.get("fecha_cierre", "")))
+
+
+# =============================================================================
 # 4) NOTA TOTAL + TEMPERATURA
 # =============================================================================
 
 def lead_score(lead):
-    """Nota 0-100 sumando las tres señales. 'lead' es un dict con las columnas."""
-    return (
+    """Nota 0-100 = peso_perfil% PERFIL + resto% URGENCIA, según la orientación activa.
+
+    El perfil (cargo+sector+actividad) y la urgencia (etapa+plazo) se normalizan a su
+    máximo y se combinan con los pesos de la orientación. Así la urgencia SUMA pero,
+    salvo orientaciones extremas, un perfil muy bajo no llega solo a Caliente.
+    """
+    perfil = (
         puntuar_cargo(lead.get("cargo", ""))
         + puntuar_sector_tamano(lead.get("sector", ""), lead.get("empleados", ""))
         + puntuar_actividad(lead.get("actividad", ""))
     )
+    peso_perfil = CONFIG["peso_perfil"]
+    aporte_perfil = perfil / PERFIL_MAX * (peso_perfil * 100)
+    aporte_urgencia = puntuar_urgencia(lead) / CONFIG["urgencia_max"] * ((1 - peso_perfil) * 100)
+    return round(aporte_perfil + aporte_urgencia)
 
 
 def clasificar_temperatura(score):
@@ -236,13 +365,18 @@ def clasificar_temperatura(score):
 
 
 def desglose_score(lead):
-    """Devuelve un dict con la nota de cada señal (útil para explicar el porqué)."""
+    """Devuelve la nota de cada señal (útil para explicar el porqué de la puntuación)."""
+    etapa = puntuar_etapa(lead.get("proceso", ""))
+    plazo = puntuar_plazo(lead.get("fecha_cierre", ""))
     return {
         "cargo": puntuar_cargo(lead.get("cargo", "")),
         "sector_tamano": puntuar_sector_tamano(
             lead.get("sector", ""), lead.get("empleados", "")
         ),
         "actividad": puntuar_actividad(lead.get("actividad", "")),
+        "etapa": etapa,
+        "plazo": plazo,
+        "urgencia": etapa + plazo,
     }
 
 
@@ -286,6 +420,16 @@ def motivo_lead(lead):
     elif d["actividad"] == 0 and tiene_otros_datos:
         partes.append("sin actividad conocida")
 
+    # Urgencia: lo cerca que está el cierre (etapa del embudo + plazo). Los cortes
+    # se leen de la orientación activa para que las frases encajen con cada preset.
+    etapa_cfg = CONFIG["etapa"]
+    if d["plazo"] >= CONFIG["plazo"][0][1]:
+        partes.append("⏰ cierre inminente")
+    elif d["etapa"] >= etapa_cfg["negociacion"]:
+        partes.append("en negociación")
+    elif d["etapa"] >= etapa_cfg["propuesta"]:
+        partes.append("propuesta en curso")
+
     if not partes:
         return "datos insuficientes"
     texto = " · ".join(partes)
@@ -315,7 +459,10 @@ def puntuar_todos(leads):
         lead["score_cargo"] = d["cargo"]
         lead["score_sector_tamano"] = d["sector_tamano"]
         lead["score_actividad"] = d["actividad"]
-        lead["lead_score"] = d["cargo"] + d["sector_tamano"] + d["actividad"]
+        lead["score_etapa"] = d["etapa"]
+        lead["score_plazo"] = d["plazo"]
+        lead["score_urgencia"] = d["urgencia"]
+        lead["lead_score"] = lead_score(lead)
         lead["temperatura"] = clasificar_temperatura(lead["lead_score"])
         lead["contactable"] = "Sí" if es_contactable(lead) else "No"
         lead["motivo"] = motivo_lead(lead)
@@ -397,15 +544,41 @@ def generar_informe_html(leads, ruta="informe_leads.html"):
         f.write(html)
 
 
+def _leer_args(args):
+    """Separa la ruta del CSV y la orientación (--orientacion X, -o X o el nombre suelto)."""
+    ruta = None
+    orientacion = ORIENTACION_POR_DEFECTO
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--orientacion", "-o") and i + 1 < len(args):
+            orientacion = args[i + 1]; i += 2; continue
+        if a.startswith("--orientacion="):
+            orientacion = a.split("=", 1)[1]; i += 1; continue
+        if a in ORIENTACIONES:        # permite pasar el nombre suelto
+            orientacion = a; i += 1; continue
+        if ruta is None:
+            ruta = a
+        i += 1
+    return (ruta or "leads_limpios.csv"), orientacion
+
+
 def main():
-    # Permite indicar el CSV por línea de comandos; si no, usa leads_limpios.csv.
-    ruta_entrada = sys.argv[1] if len(sys.argv) > 1 else "leads_limpios.csv"
+    ruta_entrada, orientacion = _leer_args(sys.argv[1:])
+    try:
+        usar_orientacion(orientacion)
+    except ValueError as e:
+        print(f"⚠ {e}\n  Uso la orientación '{ORIENTACION_POR_DEFECTO}'.")
+        usar_orientacion(ORIENTACION_POR_DEFECTO)
+
     if not os.path.exists(ruta_entrada):
         print(f"❌ No encuentro '{ruta_entrada}'. Ejecuta antes validador.py "
               "o indica otro CSV con columnas cargo/sector/empleados/actividad.")
         return
 
-    print("🚀 Lead Scorer: priorizando leads por potencial de venta...\n")
+    print(f"🚀 Lead Scorer · orientación '{CONFIG['nombre']}' "
+          f"({int(CONFIG['peso_perfil']*100)}% perfil / "
+          f"{int((1-CONFIG['peso_perfil'])*100)}% urgencia)\n")
     leads = cargar_leads(ruta_entrada)
     leads = puntuar_todos(leads)
     exportar_priorizados(leads)

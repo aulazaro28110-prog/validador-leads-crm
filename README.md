@@ -220,20 +220,37 @@ Ejemplo de `python crm.py hoy`:
 ## 🌡️ Lead Scorer (`lead_scorer.py`) — prioriza por potencial de venta
 
 Mientras el validador mide si el **dato** está limpio, el Lead Scorer mide cuánto
-**promete** un lead como cliente y lo clasifica en una temperatura comercial.
+**promete** un lead como cliente y lo clasifica en una temperatura comercial. La nota
+combina el **PERFIL** del lead con la **URGENCIA** de la oportunidad abierta:
 
-| Señal | Qué mide | Puntos |
-|-------|----------|:------:|
-| 👔 Cargo | ¿Decide la compra? (CEO/Director… vs becario) | 0-30 |
-| 🏢 Sector + Tamaño | ¿Encaja con el cliente ideal? | 0-30 |
-| 🎬 Actividad | ¿Ha mostrado interés? (demo > descarga > visita > email) | 0-40 |
+| Bloque | Señal | Qué mide |
+|--------|-------|----------|
+| **Perfil** | 👔 Cargo | ¿Decide la compra? (CEO/Director… vs becario) |
+| **Perfil** | 🏢 Sector + Tamaño | ¿Encaja con el cliente ideal? |
+| **Perfil** | 🎬 Actividad | ¿Ha mostrado interés? (demo > descarga > visita > email) |
+| **Urgencia** | 🎯 Etapa del embudo | ¿Está cerca del cierre? (Cierre > Negociación > Propuesta…) |
+| **Urgencia** | ⏰ Plazo de cierre | Días hasta la fecha de cierre (cuanto menos, más urgente) |
 
 **Temperatura:** 🔥 Caliente (70-100) · 🌡️ Templado (40-69) · ❄️ Frío (0-39).
 Además **reutiliza el validador** para avisar si un lead caliente **no es contactable**.
 
+### 🎛️ Orientaciones configurables (cada empresa prioriza distinto)
+
+El peso del perfil frente a la urgencia se ajusta con un preset, sin tocar código:
+
+| Orientación | Perfil / Urgencia | Para qué empresa |
+|-------------|:-----------------:|------------------|
+| `equilibrado` *(por defecto)* | 70 / 30 | Uso general |
+| `cierre` | 60 / 40 | Facturar ya: solo lo que cierra pronto es caliente |
+| `captacion` | 80 / 20 | Crecer: prioriza el cliente ideal aunque tarde en cerrar |
+
 ```bash
-python lead_scorer.py leads_limpios.csv   # genera leads_priorizados.csv + informe_leads.html
+python lead_scorer.py leads_limpios.csv                      # orientación por defecto
+python lead_scorer.py leads_limpios.csv --orientacion cierre  # orientada a cerrar ya
 ```
+
+> 📋 **Informe de una prueba real** (1.000 leads, de extremo a extremo) en
+> [`docs/Test-definitivo.html`](docs/Test-definitivo.html).
 
 ---
 

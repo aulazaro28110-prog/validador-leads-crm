@@ -4,11 +4,18 @@ Tests del Lead Scorer (pytest -v).
 Comprueban cada señal por separado, la nota total, la temperatura y el orden.
 """
 
+from datetime import date, timedelta
+
+import pytest
+
 from lead_scorer import (
     puntuar_cargo,
     puntuar_sector,
     puntuar_tamano,
     puntuar_actividad,
+    puntuar_etapa,
+    puntuar_plazo,
+    puntuar_urgencia,
     lead_score,
     clasificar_temperatura,
     puntuar_todos,
@@ -16,7 +23,17 @@ from lead_scorer import (
     motivo_lead,
     es_contactable,
     generar_informe_html,
+    usar_orientacion,
+    ORIENTACIONES,
 )
+
+
+@pytest.fixture(autouse=True)
+def _orientacion_por_defecto():
+    """Antes de cada test, reinicia la orientación a 'equilibrado' (evita fugas)."""
+    usar_orientacion("equilibrado")
+    yield
+    usar_orientacion("equilibrado")
 
 
 # ---------------------------------------------------------------------------
@@ -111,21 +128,102 @@ def test_actividad_toma_la_senal_mas_fuerte():
 
 
 # ---------------------------------------------------------------------------
+# URGENCIA (0-30): etapa del embudo (0-18) + plazo de cierre (0-12)
+# ---------------------------------------------------------------------------
+
+def test_etapa():
+    assert puntuar_etapa("Cierre") == 18
+    assert puntuar_etapa("Negociación") == 14
+    assert puntuar_etapa("Propuesta enviada") == 10
+    assert puntuar_etapa("Cualificación") == 5
+    assert puntuar_etapa("Prospección") == 2
+    assert puntuar_etapa("") == 0
+    assert puntuar_etapa("Etapa rara") == 3      # desconocida pero presente
+
+
+def test_plazo_por_dias_al_cierre():
+    hoy = date.today()
+    iso = lambda d: (hoy + timedelta(days=d)).isoformat()
+    assert puntuar_plazo(iso(3)) == 12           # esta semana
+    assert puntuar_plazo(iso(12)) == 9           # ~2 semanas
+    assert puntuar_plazo(iso(25)) == 6           # este mes
+    assert puntuar_plazo(iso(70)) == 3           # este trimestre
+    assert puntuar_plazo(iso(200)) == 0          # muy lejos
+    assert puntuar_plazo(iso(-5)) == 12          # vencida -> inminente
+    assert puntuar_plazo("") == 0                # sin fecha
+    assert puntuar_plazo("no es fecha") == 0     # ilegible
+
+
+def test_plazo_acepta_formato_europeo():
+    futuro = date.today() + timedelta(days=3)
+    assert puntuar_plazo(futuro.strftime("%d/%m/%Y")) == 12
+
+
+# ---------------------------------------------------------------------------
+# ORIENTACIONES COMERCIALES (presets ajustables por empresa)
+# ---------------------------------------------------------------------------
+
+def test_orientacion_cambia_el_peso_del_perfil():
+    """Mismo perfil perfecto y sin urgencia: la nota cambia según la orientación."""
+    lead = {"cargo": "CEO", "sector": "SaaS", "empleados": "200",
+            "actividad": "pidió demo"}
+    usar_orientacion("equilibrado")
+    assert lead_score(lead) == 70        # 70% perfil
+    usar_orientacion("captacion")
+    assert lead_score(lead) == 80        # 80% perfil
+    usar_orientacion("cierre")
+    assert lead_score(lead) == 60        # 60% perfil
+
+
+def test_orientacion_cierre_premia_mas_la_urgencia():
+    """Un lead de perfil medio con cierre inminente sube más en 'cierre' que en 'captacion'."""
+    lead = {"cargo": "Responsable", "sector": "Banca", "empleados": "300",
+            "actividad": "visitó web", "proceso": "Cierre",
+            "fecha_cierre": (date.today() + timedelta(days=4)).isoformat()}
+    usar_orientacion("captacion")
+    nota_captacion = lead_score(lead)
+    usar_orientacion("cierre")
+    nota_cierre = lead_score(lead)
+    assert nota_cierre > nota_captacion
+
+
+def test_orientacion_invalida_lanza_error():
+    with pytest.raises(ValueError):
+        usar_orientacion("no_existe")
+
+
+# ---------------------------------------------------------------------------
 # NOTA TOTAL Y TEMPERATURA
 # ---------------------------------------------------------------------------
 
-def test_lead_score_completo():
+def test_lead_score_perfil_completo_sin_urgencia():
+    # Perfil perfecto pero sin datos de oportunidad: 100 en bruto * 0.70 = 70.
     lead_top = {"cargo": "CEO", "sector": "SaaS",
                 "empleados": "200", "actividad": "pidió demo"}
-    # 30 (cargo) + 15+15 (sector+tamaño) + 40 (actividad) = 100
-    assert lead_score(lead_top) == 100
+    assert lead_score(lead_top) == 70
+
+
+def test_lead_score_con_urgencia_maxima():
+    # Mismo perfil + cierre inminente: 70 + 30 (urgencia) = 100.
+    lead = {"cargo": "CEO", "sector": "SaaS", "empleados": "200",
+            "actividad": "pidió demo", "proceso": "Cierre",
+            "fecha_cierre": (date.today() + timedelta(days=5)).isoformat()}
+    assert lead_score(lead) == 100
+
+
+def test_urgencia_no_fuerza_caliente_si_perfil_bajo():
+    # Becario, sector fuera, micro-empresa, pero cierre inminente: SUMA, no manda.
+    lead = {"cargo": "Becario", "sector": "Hostelería", "empleados": "4",
+            "actividad": "", "proceso": "Cierre",
+            "fecha_cierre": (date.today() + timedelta(days=3)).isoformat()}
+    # perfil bajo (8+3+0=11)*0.7≈8 + urgencia 30 = ~38 -> NO llega a Caliente
+    assert clasificar_temperatura(lead_score(lead)) != "Caliente"
 
 
 def test_lead_score_con_columnas_faltantes():
-    # Si solo viene el cargo, las demás señales puntúan 0 (o su valor por defecto).
+    # Solo cargo: (30 + 5 sector vacío + 5 tamaño vacío + 0 act) = 40 en bruto * 0.70 = 28.
     lead = {"cargo": "Director"}
-    # 30 (cargo) + (5 sector vacío + 5 tamaño vacío) + 0 (actividad) = 40
-    assert lead_score(lead) == 40
+    assert lead_score(lead) == 28
 
 
 def test_clasificar_temperatura_cortes():
@@ -142,12 +240,15 @@ def test_clasificar_temperatura_cortes():
 # ORDEN: los más prometedores arriba
 # ---------------------------------------------------------------------------
 
-def test_desglose_suma_igual_que_score():
-    """El desglose por señales debe sumar exactamente la nota total."""
-    lead = {"cargo": "Responsable", "sector": "Banca",
-            "empleados": "300", "actividad": "visitó web"}
+def test_desglose_coincide_con_la_formula():
+    """El desglose debe reconstruir exactamente la nota: 70% perfil + urgencia."""
+    lead = {"cargo": "Responsable", "sector": "Banca", "empleados": "300",
+            "actividad": "visitó web", "proceso": "Negociación",
+            "fecha_cierre": (date.today() + timedelta(days=10)).isoformat()}
     d = desglose_score(lead)
-    assert d["cargo"] + d["sector_tamano"] + d["actividad"] == lead_score(lead)
+    perfil = d["cargo"] + d["sector_tamano"] + d["actividad"]
+    assert round(perfil * 0.70 + d["urgencia"]) == lead_score(lead)
+    assert d["urgencia"] == d["etapa"] + d["plazo"]
 
 
 # ---------------------------------------------------------------------------
